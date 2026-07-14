@@ -235,8 +235,9 @@ function parseCell(cellKey) {
 /* ---- 주차 계산 (월요일 시작, KST 고정) ---- */
 function kstDayNum(ms) { return Math.floor((ms + KST_OFFSET_MS) / DAY_MS); }
 function kstDow(ms) { return (kstDayNum(ms) + 3) % 7; } // 0=월 ... 6=일 (1970-01-01=목 검증됨)
-function weekIndexOf(ms) { const d = kstDayNum(ms); return (d - ((d + 3) % 7)) / 7; }
-function weekStartMs(weekIdx) { return weekIdx * 7 * DAY_MS - KST_OFFSET_MS; } // 해당 주 월요일 00:00 KST의 UTC ms
+// 주 인덱스(월요일 시작). 월요일의 dayNum ≡ 4 (mod 7) 이므로 +3 보정 후 7로 나눠 항상 '정수' 반환
+function weekIndexOf(ms) { return Math.floor((kstDayNum(ms) + 3) / 7); }
+function weekStartMs(weekIdx) { return (weekIdx * 7 - 3) * DAY_MS - KST_OFFSET_MS; } // 해당 주 월요일 00:00 KST의 UTC ms
 function fmtDate(ms) {
   const d = new Date(ms + KST_OFFSET_MS);
   return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
