@@ -891,7 +891,7 @@ function gridHtml(mode) {
         else { cls += ' clickable'; inner = '<span class="tag">지원</span>'; }
         if (cnt > 0) inner += `<span class="cnt" title="현재 지원자 수">${cnt}</span>`;
         click = ` data-cell="${key}" data-act="togglevote"`;
-        if (cntOthers > 0 && !pending.has(key)) inner = `<span class="tag">경쟁 ${cntOthers}명</span>` + `<span class="cnt">${cnt}</span>`;
+        if (cntOthers > 0 && !pending.has(key)) inner = `<span class="tag">현재 ${cntOthers}명</span>` + `<span class="cnt">${cnt}</span>`;
       } else {
         const st = cellState(key, ctx);
         if (st.type === 'lottery') {
