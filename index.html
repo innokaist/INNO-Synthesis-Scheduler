@@ -183,12 +183,12 @@
  * 비워두면 '데모 모드'로 실행됩니다 (가상 데이터, 저장 안 됨).
  * ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★ */
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyASUCqicjGLh7P86OA2ZLc-8gidrZnRCpI",
-  authDomain: "inno-synthesis-scheduler.firebaseapp.com",
-  projectId: "inno-synthesis-scheduler",
-  storageBucket: "inno-synthesis-scheduler.firebasestorage.app",
-  messagingSenderId: "662028027818",
-  appId: "1:662028027818:web:11a1887f10b015c1c20dd3"
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
 };
 </script>
 
@@ -202,20 +202,20 @@ const KST_OFFSET_MS = 9 * 3600 * 1000; // Asia/Seoul, DST 없음
 const DAY_MS = 86400000;
 
 /* ---- 슬롯 정의 (canonical order) ----
- * Day   : 월~목 09:00-18:00  → D0~D3
- * Night : 월~목 18:00-익일09 → N0~N3
+ * Day   : 월~목 06:00-18:00  → D0~D3
+ * Night : 월~목 18:00-익일06 → N0~N3
  * Weekend: 금/토/일 전일     → W0~W2
  * 배치: 1~4  → cellKey = "D0-1" 형태 (총 44개)
  */
 const SLOT_DEFS = [
-  { key: 'D0', period: 'Day',     label: '월요일 09-18시',        day: '월' },
-  { key: 'D1', period: 'Day',     label: '화요일 09-18시',        day: '화' },
-  { key: 'D2', period: 'Day',     label: '수요일 09-18시',        day: '수' },
-  { key: 'D3', period: 'Day',     label: '목요일 09-18시',        day: '목' },
-  { key: 'N0', period: 'Night',   label: '월요일 18시-화 09시',   day: '월' },
-  { key: 'N1', period: 'Night',   label: '화요일 18시-수 09시',   day: '화' },
-  { key: 'N2', period: 'Night',   label: '수요일 18시-목 09시',   day: '수' },
-  { key: 'N3', period: 'Night',   label: '목요일 18시-금 09시',   day: '목' },
+  { key: 'D0', period: 'Day',     label: '월요일 06-18시',        day: '월' },
+  { key: 'D1', period: 'Day',     label: '화요일 06-18시',        day: '화' },
+  { key: 'D2', period: 'Day',     label: '수요일 06-18시',        day: '수' },
+  { key: 'D3', period: 'Day',     label: '목요일 06-18시',        day: '목' },
+  { key: 'N0', period: 'Night',   label: '월요일 18시-화 06시',   day: '월' },
+  { key: 'N1', period: 'Night',   label: '화요일 18시-수 06시',   day: '화' },
+  { key: 'N2', period: 'Night',   label: '수요일 18시-목 06시',   day: '수' },
+  { key: 'N3', period: 'Night',   label: '목요일 18시-금 06시',   day: '목' },
   { key: 'W0', period: 'Weekend', label: '금요일 (전일)',          day: '금' },
   { key: 'W1', period: 'Weekend', label: '토요일 (전일)',          day: '토' },
   { key: 'W2', period: 'Weekend', label: '일요일 (전일)',          day: '일' },
@@ -877,7 +877,7 @@ function gridHtml(mode) {
   for (const sd of SLOT_DEFS) {
     if (sd.period !== lastPeriod) {
       lastPeriod = sd.period;
-      const label = { Day: 'Day · 09-18시', Night: 'Night · 18시-익일 09시', Weekend: 'Weekend · 금/토/일' }[sd.period];
+      const label = { Day: 'Day · 06-18시', Night: 'Night · 18시-익일 06시', Weekend: 'Weekend · 금/토/일' }[sd.period];
       rows += `<tr class="periodrow"><td colspan="5">${label}</td></tr>`;
     }
     let tds = '';
@@ -1106,8 +1106,8 @@ function renderRules() {
 
   <h3>2. 시간표 구조</h3>
   <ul>
-    <li><b>[Day]</b> 월/화/수/목 09:00–18:00 (요일별 4개 슬롯)</li>
-    <li><b>[Night]</b> 월/화/수/목 18:00–익일 09:00 (요일별 4개 슬롯)</li>
+    <li><b>[Day]</b> 월/화/수/목 06:00–18:00 (요일별 4개 슬롯)</li>
+    <li><b>[Night]</b> 월/화/수/목 18:00–익일 06:00 (요일별 4개 슬롯)</li>
     <li><b>[Weekend]</b> 금/토/일 (요일별 3개 슬롯)</li>
     <li>각 슬롯은 합성 Batch <b>#1 / #2 / #3 / #4</b>로 세분 → 주당 총 44칸.</li>
   </ul>
