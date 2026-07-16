@@ -1539,7 +1539,8 @@ function openLogin() {
     <p class="muted" style="margin-bottom:10px">Synthesis Scheduler와 같은 계정(이름+PIN)입니다.</p>
     <div class="field"><label>이름</label><select id="loginMember">${opts}</select></div>
     <div class="field"><label>PIN</label><input id="loginPin" type="password" inputmode="numeric"></div>
-    <div class="flexrow"><button class="btn primary" id="btnDoLogin">로그인</button><button class="btn" data-close>취소</button></div>`);
+    <div class="flexrow"><button class="btn primary" id="btnDoLogin">로그인</button><button class="btn" data-close>취소</button></div>
+    <p class="muted" style="margin-top:10px">⚠ 첫 로그인 시 입력한 PIN이 그대로 등록되니 신중히 입력하세요. PIN 분실 시 관리자에게 초기화를 요청하세요.</p>`);
   $('#btnDoLogin').addEventListener('click', async () => {
     const id = $('#loginMember').value, pin = $('#loginPin').value.trim();
     if (pin.length < 4) return toast('PIN은 4자리 이상이어야 합니다.', 'err');
