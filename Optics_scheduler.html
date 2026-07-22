@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Optics Scheduler</title>
+<style>
+  :root {
+    --bg: #f4f6fa; --card: #ffffff; --line: #e3e8f0; --text: #1c2333; --sub: #6b7690;
+    --accent: #3b5bdb; --accent-soft: #e7ecfd; --green: #2f9e63; --green-soft: #e3f5ec;
+    --amber: #b7791f; --amber-soft: #fdf3e0; --red: #d64550; --red-soft: #fdeaec;
+    --violet: #7048b6; --violet-soft: #f0e9fb; --radius: 12px;
+    --shadow: 0 1px 3px rgba(20,30,60,.08), 0 4px 14px rgba(20,30,60,.05);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+         background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.55; }
+  button { font-family: inherit; cursor: pointer; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 16px 14px 80px; }
+
+  /* ---- header ---- */
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .logo { font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+  .logo small { display:block; font-size: 12px; font-weight: 500; color: var(--sub); }
+  .head-right { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .userchip { background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+              padding: 6px 14px; font-weight: 600; font-size: 14px; box-shadow: var(--shadow);
+              display: inline-flex; gap: 8px; align-items: center; }
+  .userchip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .btn { border: 1px solid var(--line); background: var(--card); color: var(--text);
+         border-radius: 10px; padding: 8px 14px; font-size: 14px; font-weight: 600;
+         transition: .15s; box-shadow: var(--shadow); }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); color:#fff; }
+  .btn.danger { color: var(--red); }
+  .btn.danger:hover { border-color: var(--red); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.sm { padding: 4px 10px; font-size: 12.5px; border-radius: 8px; box-shadow: none; }
+
+  /* ---- phase banner ---- */
+  .phasebar { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+              box-shadow: var(--shadow); padding: 14px 18px; margin-bottom: 14px; }
+  .phasebar .toprow { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+  .badge { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 700; }
+  .b-accent { background: var(--accent-soft); color: var(--accent); }
+  .b-green  { background: var(--green-soft);  color: var(--green); }
+  .b-amber  { background: var(--amber-soft);  color: var(--amber); }
+  .b-red    { background: var(--red-soft);    color: var(--red); }
+  .b-violet { background: var(--violet-soft); color: var(--violet); }
+  .b-gray   { background: #eef1f6; color: var(--sub); }
+  .countdown { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent); }
+  .steps { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .step { flex: 1 1 140px; border-radius: 9px; padding: 8px 10px; border: 1px solid var(--line);
+          font-size: 12.5px; color: var(--sub); background: #fafbfe; }
+  .step b { display: block; font-size: 13px; color: var(--text); }
+  .step.on { border-color: var(--accent); background: var(--accent-soft); }
+  .step.on b { color: var(--accent); }
+  .step.done { opacity: .55; }
+
+  /* ---- tabs ---- */
+  nav.tabs { display: flex; gap: 4px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 2px; }
+  nav.tabs button { white-space: nowrap; border: none; background: transparent; padding: 9px 15px;
+                    border-radius: 10px; font-size: 14.5px; font-weight: 600; color: var(--sub); }
+  nav.tabs button.on { background: var(--text); color: #fff; }
+  nav.tabs button:not(.on):hover { background: #e8ecf4; color: var(--text); }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+          box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px; }
+  .card h2 { font-size: 16.5px; margin-bottom: 10px; letter-spacing: -.2px; }
+  .card h3 { font-size: 14.5px; margin: 14px 0 6px; }
+  .muted { color: var(--sub); font-size: 13px; }
+  .note { background: #fafbfe; border: 1px dashed var(--line); border-radius: 9px;
+          padding: 10px 12px; font-size: 13px; color: var(--sub); margin: 8px 0; }
+
+  /* ---- schedule grid ---- */
+  .gridwrap { overflow-x: auto; }
+  table.sched { border-collapse: separate; border-spacing: 4px; width: 100%; min-width: 640px; }
+  table.sched th { font-size: 12px; color: var(--sub); font-weight: 600; padding: 4px 6px; text-align: center; }
+  table.sched th.rowh { text-align: left; min-width: 130px; }
+  table.sched td.rowh { font-size: 12.5px; font-weight: 600; padding: 4px 8px; white-space: nowrap; }
+  table.sched td.rowh small { display: block; color: var(--sub); font-weight: 500; font-size: 11px; }
+  .cell { height: 46px; min-width: 92px; border-radius: 9px; border: 1.5px solid var(--line);
+          background: #fbfcfe; text-align: center; vertical-align: middle; font-size: 12.5px;
+          padding: 2px 4px; position: relative; transition: .12s; }
+  .cell.clickable { cursor: pointer; }
+  .cell.clickable:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .cell.mine    { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .cell.lottery { background: var(--accent-soft); border-color: #b9c6f5; color: #2c47b8; font-weight: 700; }
+  .cell.booked  { background: var(--green-soft); border-color: #bfe6d2; color: #1c7a49; font-weight: 700; }
+  .cell.minewin { outline: 2px solid var(--accent); }
+  .cell.empty-book { border-style: dashed; color: var(--sub); }
+  .cell.disabled { opacity: .5; }
+  .cell .cnt { position: absolute; top: -7px; right: -5px; background: var(--amber); color: #fff;
+               border-radius: 999px; font-size: 10.5px; font-weight: 700; padding: 1px 6px; }
+  .cell .tag { display:block; font-size: 10.5px; font-weight: 500; opacity: .75; }
+  .periodrow td { padding-top: 10px; font-size: 12px; font-weight: 800; color: var(--sub);
+                  text-transform: uppercase; letter-spacing: .6px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--sub); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .sw { width: 13px; height: 13px; border-radius: 4px; border: 1.5px solid var(--line); display: inline-block; }
+
+  /* ---- token chips ---- */
+  .tokens { display: flex; gap: 6px; align-items: center; }
+  .tok { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--accent);
+         display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: var(--accent); }
+  .tok.used { border-color: var(--line); color: #c3cad8; background: #f2f4f9; }
+
+  /* ---- lists / tables ---- */
+  table.list { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.list th { text-align: left; color: var(--sub); font-size: 12px; font-weight: 600;
+                  border-bottom: 1px solid var(--line); padding: 6px 8px; }
+  table.list td { border-bottom: 1px solid #f0f2f7; padding: 8px; }
+  table.list tr:last-child td { border-bottom: none; }
+
+  /* ---- rules tab ---- */
+  .rules h3 { margin: 18px 0 8px; font-size: 15px; color: var(--accent); }
+  .rules ul { margin: 4px 0 10px 20px; }
+  .rules li { margin: 4px 0; font-size: 13.8px; }
+  .rules li li { font-size: 13.2px; color: #3a4358; }
+
+  /* ---- modal ---- */
+  .modal-bg { position: fixed; inset: 0; background: rgba(15,22,40,.45); display: flex;
+              align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal { background: #fff; border-radius: 16px; padding: 24px; width: 100%; max-width: 400px;
+           box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  .modal h2 { font-size: 17px; margin-bottom: 12px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--sub); margin-bottom: 4px; }
+  .field input, .field select { width: 100%; border: 1.5px solid var(--line); border-radius: 9px;
+                                padding: 9px 12px; font-size: 15px; font-family: inherit; background: #fff; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+
+  /* ---- toast ---- */
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 99;
+           display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .toastmsg { background: #1c2333; color: #fff; border-radius: 10px; padding: 10px 18px;
+              font-size: 13.5px; box-shadow: 0 8px 30px rgba(0,0,0,.3); animation: pop .2s; max-width: 90vw; }
+  .toastmsg.err { background: var(--red); }
+  .toastmsg.okk { background: var(--green); }
+  @keyframes pop { from { opacity: 0; transform: translateY(8px);} }
+
+  .demo-banner { background: var(--amber-soft); border: 1px solid #f0dcb4; color: var(--amber);
+                 border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px; }
+  .verify-ok { color: var(--green); font-weight: 700; }
+  .verify-bad { color: var(--red); font-weight: 700; }
+  .prio-banner { background: var(--violet-soft); border: 1px solid #ddd0f2; color: var(--violet);
+                 border-radius: 10px; padding: 10px 14px; font-size: 13.5px; margin-bottom: 12px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+  .stat { text-align: center; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background:#fafbfe; }
+  .stat b { display: block; font-size: 22px; color: var(--accent); }
+  .stat span { font-size: 12px; color: var(--sub); }
+  .flexrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  code.k { background:#eef1f6; border-radius:5px; padding:1px 6px; font-size:12px; }
+
+  /* ---- 주간 캘린더 (30분 x 7일) ---- */
+  .calwrap { overflow-x: auto; }
+  .cal { display: grid; grid-template-columns: 46px repeat(7, minmax(96px, 1fr)); gap: 0;
+         min-width: 760px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+         user-select: none; -webkit-user-select: none; background: #fff; }
+  .cal.mini { min-width: 0; width: 100%; grid-template-columns: 36px repeat(7, minmax(0, 1fr)); font-size: 10px; }
+  .cal.mini .cell { min-width: 0; } /* 컨테이너 폭에 딱 맞춤 — 가로 스크롤 방지 */
+  .cal .hd { background: #f2f4f9; border-bottom: 1.5px solid var(--line); padding: 6px 2px;
+             text-align: center; font-size: 12px; font-weight: 700; position: sticky; top: 0; }
+  .cal.mini .hd { font-size: 10.5px; padding: 4px 1px; }
+  .cal .hd small { display: block; font-weight: 500; color: var(--sub); font-size: 10px; }
+  .cal .tl { font-size: 10px; color: var(--sub); text-align: right; padding-right: 4px;
+             border-top: 1px solid #eef1f6; background: #fafbfe; line-height: 1; padding-top: 2px; }
+  .cal .cell { height: 13px; border-top: 1px solid #f3f5f9; border-left: 1px solid #f3f5f9;
+               position: relative; cursor: default; }
+  .cal.mini .cell { height: 11.8px; } /* 조율 탭: 채팅창(620px) 높이에 맞춰 세로 확장 */
+  .cal .cell.hour { border-top-color: #dfe4ee; }
+  .cal .cell.editable { cursor: pointer; }
+  .cal .cell.sel { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
+  .cal .cell .lbl { position: absolute; top: 0; left: 3px; right: 2px; font-size: 10px; font-weight: 700;
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 1; pointer-events: none; }
+  .cal.mini .cell .lbl { font-size: 9.5px; left: 2px; }
+  /* 희망순위 오버레이 칩 */
+  .rankchips { min-height: 0; display: flex; flex-direction: column; gap: 2px; padding: 3px 2px;
+               background: #fbfcfe; border-top: 1px dashed var(--line); }
+  .rankchip { font-size: 10px; border-radius: 6px; padding: 1px 5px; opacity: .62;
+              border: 1px solid; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rc1 { background: var(--accent-soft); border-color: var(--accent); color: #2c47b8; }
+  .rc2 { background: var(--green-soft); border-color: var(--green); color: #1c7a49; }
+  .rc3 { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
+  /* 셀 편집 팝업 */
+  .cellpop { position: fixed; z-index: 60; background: #fff; border: 1px solid var(--line);
+             border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.22); padding: 12px; width: 230px; }
+  .cellpop h4 { font-size: 13px; margin-bottom: 8px; }
+  /* ---- 투표 요일 카드 ---- */
+  .daycards { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .daycard { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 10px; text-align: center;
+             cursor: pointer; background: #fbfcfe; transition: .12s; position: relative; }
+  .daycard:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .daycard b { font-size: 16px; }
+  .daycard .date { color: var(--sub); font-size: 11.5px; }
+  .daycard .agg { margin-top: 6px; font-size: 11px; color: var(--sub); min-height: 16px; }
+  .daycard .myrank { position: absolute; top: -9px; right: -6px; width: 26px; height: 26px; border-radius: 50%;
+                     background: var(--accent); color: #fff; font-weight: 800; font-size: 13px;
+                     display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); }
+  .daycard.picked { border-color: var(--accent); background: var(--accent-soft); }
+  /* ---- 조율 채팅 ---- */
+  .coord { display: grid; grid-template-columns: minmax(300px, 1.15fr) minmax(280px, 1fr); gap: 14px; }
+  @media (max-width: 860px) { .coord { grid-template-columns: 1fr; } }
+  .chatbox { display: flex; flex-direction: column; height: 620px; border: 1px solid var(--line);
+             border-radius: 12px; background: #fff; overflow: hidden; }
+  .chatlog { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .msg { max-width: 85%; }
+  .msg .meta { font-size: 10.5px; color: var(--sub); margin-bottom: 2px; }
+  .msg .bubble { background: #f1f3f9; border-radius: 12px; padding: 7px 11px; font-size: 13.5px;
+                 white-space: pre-wrap; word-break: break-word; }
+  .msg.mine { align-self: flex-end; text-align: right; }
+  .msg.mine .bubble { background: var(--accent); color: #fff; }
+  .chatin { display: flex; gap: 6px; padding: 10px; border-top: 1px solid var(--line); background: #fafbfe; }
+  .chatin input { flex: 1; border: 1.5px solid var(--line); border-radius: 9px; padding: 9px 12px;
+                  font-size: 14px; font-family: inherit; }
+  .chatin input:focus { outline: none; border-color: var(--accent); }
+  /* ---- Hardware Log ---- */
+  .hw h3 { display: flex; align-items: center; gap: 8px; }
+  .hw table.list input[type="text"] { width: 100%; border: 1.5px solid var(--line); border-radius: 7px;
+                                       padding: 4px 8px; font-size: 13px; font-family: inherit; }
+  .hw .meta { font-size: 11px; color: var(--sub); white-space: nowrap; }
+  .hwlog { max-height: 300px; overflow-y: auto; }
+  .weekchips { display: inline-flex; gap: 6px; }
+  .weekchips button { border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
+                      padding: 5px 14px; font-size: 13px; font-weight: 600; color: var(--sub); }
+  .weekchips button.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">Weekly Optics Scheduler<small id="weekLabel"></small></div>
+    <div class="head-right" id="headRight"></div>
+  </header>
+  <div id="demoBanner"></div>
+  <div class="phasebar" id="phasebar"></div>
+  <nav class="tabs" id="tabs"></nav>
+  <main id="main"></main>
+</div>
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+<script>
+/* ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+ * [필수 설정] 아래에 Firebase 프로젝트의 구성 객체를 붙여넣으세요.
+ * (Firebase 콘솔 → 프로젝트 설정 → 일반 → 내 앱 → SDK 설정 및 구성)
+ * 비워두면 '데모 모드'로 실행됩니다 (가상 데이터, 저장 안 됨).
+ * ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyASUCqicjGLh7P86OA2ZLc-8gidrZnRCpI",
+  authDomain: "inno-synthesis-scheduler.firebaseapp.com",
+  projectId: "inno-synthesis-scheduler",
+  storageBucket: "inno-synthesis-scheduler.firebasestorage.app",
+  messagingSenderId: "662028027818",
+  appId: "1:662028027818:web:11a1887f10b015c1c20dd3"
+};
+</script>
+
+<script>
+/* =====================================================================
+ * Weekly Synthesis Scheduler - 핵심 공유 로직 (주차 계산 + 결정론적 추첨)
+ * 이 파일은 index.html 에 그대로 인라인되며, Node 단위테스트에서도 사용됨
+ * ===================================================================== */
+
+const KST_OFFSET_MS = 9 * 3600 * 1000; // Asia/Seoul, DST 없음
+const DAY_MS = 86400000;
+
+/* ---- 슬롯 정의 (canonical order) ----
+ * Day   : 월~목 06:00-18:00  → D0~D3
+ * Night : 월~목 18:00-익일06 → N0~N3
+ * Weekend: 금/토/일 전일     → W0~W2
+ * 배치: 1~4  → cellKey = "D0-1" 형태 (총 44개)
+ */
+const SLOT_DEFS = [
+  { key: 'D0', period: 'Day',     label: '월요일 06-18시',        day: '월' },
+  { key: 'D1', period: 'Day',     label: '화요일 06-18시',        day: '화' },
+  { key: 'D2', period: 'Day',     label: '수요일 06-18시',        day: '수' },
+  { key: 'D3', period: 'Day',     label: '목요일 06-18시',        day: '목' },
+  { key: 'N0', period: 'Night',   label: '월요일 18시-화 06시',   day: '월' },
+  { key: 'N1', period: 'Night',   label: '화요일 18시-수 06시',   day: '화' },
+  { key: 'N2', period: 'Night',   label: '수요일 18시-목 06시',   day: '수' },
+  { key: 'N3', period: 'Night',   label: '목요일 18시-금 06시',   day: '목' },
+  { key: 'W0', period: 'Weekend', label: '금요일 (전일)',          day: '금' },
+  { key: 'W1', period: 'Weekend', label: '토요일 (전일)',          day: '토' },
+  { key: 'W2', period: 'Weekend', label: '일요일 (전일)',          day: '일' },
+];
+const SLOT_ORDER = SLOT_DEFS.map(s => s.key);
+const BATCHES = [1, 2, 3, 4];
+const ALL_CELL_KEYS = SLOT_ORDER.flatMap(s => BATCHES.map(b => `${s}-${b}`));
+const TOKENS_PER_WEEK = 4;
+const DAY_CAP = 2; // 1주 Day 시간대 1인 최대 배치 수
+
+function isDaySlot(slotKey) { return slotKey[0] === 'D'; }
+function parseCell(cellKey) {
+  const [slot, b] = cellKey.split('-');
+  return { slot, batch: parseInt(b, 10) };
+}
+
+/* ---- 주차 계산 (월요일 시작, KST 고정) ---- */
+function kstDayNum(ms) { return Math.floor((ms + KST_OFFSET_MS) / DAY_MS); }
+function kstDow(ms) { return (kstDayNum(ms) + 3) % 7; } // 0=월 ... 6=일 (1970-01-01=목 검증됨)
+// 주 인덱스(월요일 시작). 월요일의 dayNum ≡ 4 (mod 7) 이므로 +3 보정 후 7로 나눠 항상 '정수' 반환
+function weekIndexOf(ms) { return Math.floor((kstDayNum(ms) + 3) / 7); }
+function weekStartMs(weekIdx) { return (weekIdx * 7 - 3) * DAY_MS - KST_OFFSET_MS; } // 해당 주 월요일 00:00 KST의 UTC ms
+function fmtDate(ms) {
+  const d = new Date(ms + KST_OFFSET_MS);
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+}
+function weekLabel(weekIdx) {
+  const s = weekStartMs(weekIdx);
+  return `${fmtDate(s)}(월) ~ ${fmtDate(s + 6 * DAY_MS)}(일)`;
+}
+/* 투표 주(현재 주)의 국면 판정. targetWeek = votingWeek + 1 */
+function phaseOf(nowMs) {
+  const votingWeek = weekIndexOf(nowMs);
+  const targetWeek = votingWeek + 1;
+  const monday = weekStartMs(votingWeek);
+  const voteClose = monday + 3 * DAY_MS;            // 목요일 00:00 (= 수요일 24시)
+  const announce = monday + 3 * DAY_MS + 12 * 3600 * 1000; // 목요일 12:00
+  let phase;
+  if (nowMs < voteClose) phase = 'VOTING';
+  else if (nowMs < announce) phase = 'WAITING';
+  else phase = 'BOOKING';
+  return { votingWeek, targetWeek, monday, voteClose, announce, phase };
+}
+
+/* ---- 결정론적 시드 및 PRNG ---- */
+/* 투표 스냅샷의 canonical JSON: memberId 정렬, 각 멤버의 cell 목록 정렬 */
+function canonicalVotesJson(votesByMember) {
+  const ids = Object.keys(votesByMember).sort();
+  const obj = {};
+  for (const id of ids) {
+    obj[id] = [...votesByMember[id]].sort();
+  }
+  return JSON.stringify(obj);
+}
+
+/* SHA-256 (의존성 없는 순수 JS 구현; 브라우저/Node 동일 결과) */
+function sha256Hex(str) {
+  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  let H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const rr = (x, n) => (x >>> n) | (x << (32 - n));
+  // UTF-8 인코딩
+  const bytes = [];
+  for (let i = 0; i < str.length; i++) {
+    let c = str.codePointAt(i);
+    if (c > 0xffff) i++;
+    if (c < 0x80) bytes.push(c);
+    else if (c < 0x800) bytes.push(0xc0 | (c >> 6), 0x80 | (c & 63));
+    else if (c < 0x10000) bytes.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+    else bytes.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 63), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+  }
+  const bitLen = bytes.length * 8;
+  bytes.push(0x80);
+  while (bytes.length % 64 !== 56) bytes.push(0);
+  for (let i = 7; i >= 0; i--) bytes.push((i >= 4 ? 0 : (bitLen / Math.pow(2, i * 8))) & 0xff);
+  // 상위 32비트는 실용상 0 (2^32비트 미만 입력)
+  for (let off = 0; off < bytes.length; off += 64) {
+    const w = new Array(64);
+    for (let i = 0; i < 16; i++)
+      w[i] = (bytes[off + 4 * i] << 24) | (bytes[off + 4 * i + 1] << 16) | (bytes[off + 4 * i + 2] << 8) | bytes[off + 4 * i + 3];
+    for (let i = 16; i < 64; i++) {
+      const s0 = rr(w[i - 15], 7) ^ rr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+      const s1 = rr(w[i - 2], 17) ^ rr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      const S1 = rr(e, 6) ^ rr(e, 11) ^ rr(e, 25);
+      const ch = (e & f) ^ (~e & g);
+      const t1 = (h + S1 + ch + K[i] + w[i]) | 0;
+      const S0 = rr(a, 2) ^ rr(a, 13) ^ rr(a, 22);
+      const mj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + mj) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H = H.map((x, i) => (x + [a, b, c, d, e, f, g, h][i]) | 0);
+  }
+  return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
+}
+
+/* mulberry32 - 시드 기반 결정론적 PRNG */
+function makeRng(seedHex) {
+  let s = parseInt(seedHex.slice(0, 8), 16) >>> 0;
+  // 시드 확장: 해시 뒷부분도 섞음
+  s = (s ^ parseInt(seedHex.slice(8, 16), 16)) >>> 0;
+  return function () {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffled(arr, rng) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* =====================================================================
+ * 결정론적 추첨
+ * 입력: votesByMember = { memberId: ["D0-1","D0-2","N1-3", ...] }
+ * 출력: { seed, assignments: {cellKey: memberId}, priorityMembers: [...],
+ *         dayCount: {memberId: n} }
+ *
+ * 규칙 구현:
+ * (1) 동일 슬롯+배치 1인 배정, 경합 시 시드 기반 무작위 추첨
+ * (2) Day 시간대 주간 1인 최대 2배치 (배정 시점 강제)
+ * (3) 동일 슬롯에 2개 이상 배치 투표자(번들)가 우선권, 번들 간 경합도 무작위
+ * (4) 번들은 all-or-nothing (전부 배정 또는 전부 탈락)
+ * ===================================================================== */
+function computeLottery(votesByMember) {
+  const canonical = canonicalVotesJson(votesByMember);
+  const seed = sha256Hex(canonical);
+  const rng = makeRng(seed);
+
+  const assignments = {}; // cellKey -> memberId
+  const dayCount = {};    // memberId -> Day 배정 수
+  const memberIds = Object.keys(votesByMember).sort();
+
+  for (const slot of SLOT_ORDER) {
+    const day = isDaySlot(slot);
+    // 이 슬롯에서 멤버별 투표 배치 목록
+    const bySlot = [];
+    for (const m of memberIds) {
+      const bs = (votesByMember[m] || [])
+        .map(parseCell).filter(c => c.slot === slot).map(c => c.batch)
+        .sort((a, b) => a - b);
+      if (bs.length) bySlot.push({ m, bs });
+    }
+    // --- 1단계: 번들(같은 슬롯 2개 이상 배치) 우선, 무작위 순서 그리디 ---
+    const bundles = shuffled(bySlot.filter(x => x.bs.length >= 2), rng);
+    for (const { m, bs } of bundles) {
+      if (day && (dayCount[m] || 0) + bs.length > DAY_CAP) continue; // 규칙(2)
+      const free = bs.every(b => !assignments[`${slot}-${b}`]);
+      if (free) { // 규칙(4): all-or-nothing
+        for (const b of bs) assignments[`${slot}-${b}`] = m;
+        if (day) dayCount[m] = (dayCount[m] || 0) + bs.length;
+      }
+    }
+    // --- 2단계: 단일 투표자, 배치별 무작위 추첨 ---
+    const singles = bySlot.filter(x => x.bs.length === 1);
+    for (const b of BATCHES) {
+      const key = `${slot}-${b}`;
+      if (assignments[key]) continue;
+      const cands = singles
+        .filter(x => x.bs[0] === b)
+        .filter(x => !(day && (dayCount[x.m] || 0) >= DAY_CAP))
+        .map(x => x.m); // memberIds 순회로 이미 정렬됨
+      if (!cands.length) continue;
+      const pick = cands.length === 1 ? cands[0] : cands[Math.floor(rng() * cands.length)];
+      assignments[key] = pick;
+      if (day) dayCount[pick] = (dayCount[pick] || 0) + 1;
+    }
+  }
+
+  // Day에 1표 이상 투자했으나 Day 배정 0인 인원 → 우선예약 대상
+  const priorityMembers = memberIds.filter(m => {
+    const votedDay = (votesByMember[m] || []).some(c => isDaySlot(parseCell(c).slot));
+    return votedDay && !(dayCount[m] > 0);
+  });
+
+  return { seed, assignments, priorityMembers, dayCount, canonical };
+}
+
+/* 투표 유효성 검사 (클라이언트 측; 서버 rules 와 동일 기준) */
+function validateVoteSet(cells) {
+  if (!Array.isArray(cells)) return '형식 오류';
+  if (cells.length > TOKENS_PER_WEEK) return `토큰은 주당 ${TOKENS_PER_WEEK}개까지입니다.`;
+  const set = new Set(cells);
+  if (set.size !== cells.length) return '동일 슬롯·배치에 중복 투표할 수 없습니다.';
+  for (const c of cells) if (!ALL_CELL_KEYS.includes(c)) return `유효하지 않은 슬롯: ${c}`;
+  // 단일 Day 슬롯 내 3개 이상 번들은 규칙(2)와 (4)의 조합상 절대 당첨 불가 → 사전 차단
+  for (const s of SLOT_ORDER.filter(isDaySlot)) {
+    const n = cells.filter(c => parseCell(c).slot === s).length;
+    if (n > DAY_CAP) return `Day 슬롯(${s}) 하나에 ${n}개 배치 묶음은 Day 주간 2개 제한과 전부-또는-전무 규칙상 당첨이 불가능하여 차단됩니다.`;
+  }
+  return null;
+}
+
+/* Node 테스트용 export (브라우저에서는 무시됨) */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    SLOT_DEFS, SLOT_ORDER, BATCHES, ALL_CELL_KEYS, TOKENS_PER_WEEK, DAY_CAP,
+    isDaySlot, parseCell, kstDayNum, kstDow, weekIndexOf, weekStartMs, weekLabel, phaseOf,
+    canonicalVotesJson, sha256Hex, makeRng, shuffled, computeLottery, validateVoteSet, fmtDate,
+  };
+}
+
+</script>
+
+<script>
+/* =====================================================================
+ * Weekly Optics Scheduler - 광학 전용 핵심 로직
+ * (core.js 의 주차계산·SHA-256·PRNG 를 그대로 사용하며, 이 파일이 뒤에 연결됨)
+ * ===================================================================== */
+
+const OPT_DAYS = ['월', '화', '수', '목', '금', '토', '일']; // dayIdx 0~6
+const OPT_SLOTS_PER_DAY = 48; // 30분 단위 00:00~24:00
+const OPT_MAX_RANKS = 3;
+
+function optSlotLabel(slotIdx) {
+  const h = Math.floor(slotIdx / 2), m = slotIdx % 2 ? '30' : '00';
+  return String(h).padStart(2, '0') + ':' + m;
+}
+function optDayDate(weekIdx, dayIdx) { return weekStartMs(weekIdx) + dayIdx * DAY_MS; }
+function optDayLabel(weekIdx, dayIdx) { return fmtDate(optDayDate(weekIdx, dayIdx)) + '(' + OPT_DAYS[dayIdx] + ')'; }
+/* '7/16(목)' 형태 + 요일 포함 날짜 표기 (하드웨어 로그용) */
+/* Remark 기록: 새 항목을 맨 앞에 추가하고 최대 max개만 유지(오래된 것 자동 삭제) */
+function optPushRemark(entries, entry, max) {
+  const cap = max || 10;
+  const list = [entry].concat(Array.isArray(entries) ? entries : []);
+  return list.slice(0, cap);
+}
+
+function optFmtDateDow(ms) {
+  const dow = OPT_DAYS[(kstDayNum(ms) + 3) % 7];
+  const d = new Date(ms + KST_OFFSET_MS);
+  return `${d.getUTCFullYear()}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${String(d.getUTCDate()).padStart(2, '0')}(${dow}) ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+}
+
+/* ---- 투표 canonical 직렬화 ----
+ * votesByMember = { memberId: {r1: dayIdx, r2?: dayIdx, r3?: dayIdx} } */
+function optCanonicalVotesJson(votesByMember) {
+  const ids = Object.keys(votesByMember).sort();
+  const obj = {};
+  for (const id of ids) {
+    const v = votesByMember[id] || {};
+    const o = {};
+    for (const k of ['r1', 'r2', 'r3']) if (v[k] !== undefined && v[k] !== null) o[k] = v[k];
+    obj[id] = o;
+  }
+  return JSON.stringify(obj);
+}
+
+/* ---- 투표 유효성 (클라이언트; 서버 rules 와 동일 기준) ---- */
+function optValidateVote(ranks) {
+  const keys = Object.keys(ranks || {});
+  for (const k of keys) if (!['r1', 'r2', 'r3'].includes(k)) return '형식 오류';
+  const vals = keys.map(k => ranks[k]);
+  for (const v of vals) if (!Number.isInteger(v) || v < 0 || v > 6) return '유효하지 않은 요일';
+  if (new Set(vals).size !== vals.length) return '같은 요일을 중복 순위로 투표할 수 없습니다.';
+  // 순위는 1부터 연속 (r2가 있으면 r1도, r3가 있으면 r2도)
+  if ((ranks.r2 !== undefined && ranks.r1 === undefined) || (ranks.r3 !== undefined && ranks.r2 === undefined))
+    return '순위는 1순위부터 순서대로 지정해야 합니다.';
+  return null;
+}
+
+/* =====================================================================
+ * 결정론적 요일 배정
+ * 정렬 기준(중요, 이 순서대로):
+ *   ① 현재까지 당첨 수가 적은 사람 (무당첨자 절대 우선)
+ *   ② 해당 요일에 대한 순위가 높은(숫자가 작은) 사람
+ *   ③ 전체 투표 수가 적은 사람 (더 간절함)
+ *   ④ 시드 기반 무작위 (시드 = 마감된 전체 투표의 SHA-256 → 조작 불가·전원 검증 가능)
+ * 요일 처리 순서는 월→일 고정 (당첨 수 갱신이 다음 요일에 반영됨)
+ * 한 사람이 여러 요일에 당첨될 수 있음 (단 ①에 의해 무당첨자가 항상 우선)
+ * ===================================================================== */
+function computeOpticsLottery(votesByMember) {
+  const canonical = optCanonicalVotesJson(votesByMember);
+  const seed = sha256Hex(canonical);
+  const rng = makeRng(seed);
+
+  const memberIds = Object.keys(votesByMember).sort();
+  const voteCount = {};       // mid -> 투표한 순위 수 (1~3)
+  const rankOf = {};          // mid -> {dayIdx: rank}
+  for (const mid of memberIds) {
+    const v = votesByMember[mid] || {};
+    rankOf[mid] = {};
+    let n = 0;
+    [['r1', 1], ['r2', 2], ['r3', 3]].forEach(([k, r]) => {
+      if (v[k] !== undefined && v[k] !== null) { rankOf[mid][v[k]] = r; n++; }
+    });
+    voteCount[mid] = n;
+  }
+
+  const wins = {};            // mid -> 당첨 수
+  const dayAssign = {};       // dayIdx(string) -> memberId
+  const dayContenders = {};   // dayIdx -> [{mid, rank}] (결과 표시용)
+
+  for (let day = 0; day < 7; day++) {
+    const cands = memberIds
+      .filter(mid => rankOf[mid][day] !== undefined)
+      .map(mid => ({ mid, rank: rankOf[mid][day], w: wins[mid] || 0, v: voteCount[mid] }));
+    dayContenders[day] = cands.map(c => ({ mid: c.mid, rank: c.rank }));
+    if (!cands.length) continue;
+    // 최소 튜플 (w, rank, v)
+    let best = null;
+    for (const c of cands) {
+      if (!best || c.w < best.w || (c.w === best.w && (c.rank < best.rank || (c.rank === best.rank && c.v < best.v)))) best = c;
+    }
+    const tied = cands.filter(c => c.w === best.w && c.rank === best.rank && c.v === best.v);
+    const winner = tied.length === 1 ? tied[0].mid : tied[Math.floor(rng() * tied.length)].mid;
+    dayAssign[String(day)] = winner;
+    wins[winner] = (wins[winner] || 0) + 1;
+  }
+
+  // 1표 이상 투표했으나 아무 요일도 당첨되지 못한 인원 (참고 표시용)
+  const unassignedMembers = memberIds.filter(mid => voteCount[mid] > 0 && !(wins[mid] > 0));
+
+  return { seed, dayAssign, unassignedMembers, canonical, dayContenders };
+}
+
+/* ---- 유효 스케줄 계산: 기본 요일 배정 + 30분 단위 수정본(override) ----
+ * scheduleDocs: {dayIdx(string): {slots: {slotIdx(string): memberId|""}}}
+ * 반환: day -> [48] 배열 (memberId | null)                                   */
+function optEffectiveSchedule(dayAssign, scheduleDocs) {
+  const eff = {};
+  for (let day = 0; day < 7; day++) {
+    const base = (dayAssign || {})[String(day)] || null;
+    const slots = ((scheduleDocs || {})[String(day)] || {}).slots || {};
+    const arr = new Array(OPT_SLOTS_PER_DAY);
+    for (let s = 0; s < OPT_SLOTS_PER_DAY; s++) {
+      const ov = slots[String(s)];
+      arr[s] = ov === undefined ? base : (ov === '' ? null : ov);
+    }
+    eff[day] = arr;
+  }
+  return eff;
+}
+
+/* 슬롯 배열 → 연속 블록 병합 [{start, end(미포함), owner}] (캘린더/표시용) */
+function optMergeBlocks(slotArr) {
+  const blocks = [];
+  let cur = null;
+  for (let s = 0; s < slotArr.length; s++) {
+    const o = slotArr[s];
+    if (cur && cur.owner === o) { cur.end = s + 1; continue; }
+    if (cur && cur.owner !== null) blocks.push(cur);
+    cur = o !== null ? { start: s, end: s + 1, owner: o } : null;
+    if (o === null) cur = null;
+  }
+  if (cur && cur.owner !== null) blocks.push(cur);
+  return blocks;
+}
+
+/* Node 테스트용 export */
+if (typeof module !== 'undefined' && module.exports) {
+  Object.assign(module.exports, {
+    OPT_DAYS, OPT_SLOTS_PER_DAY, optSlotLabel, optDayLabel, optFmtDateDow,
+    optCanonicalVotesJson, optValidateVote, computeOpticsLottery,
+    optEffectiveSchedule, optMergeBlocks, optPushRemark,
+  });
+}
+
+</script>
+
+<script>
+/* =====================================================================
+ * Weekly Optics Scheduler - 앱 (1/3): 상태·저장소·공통
+ * ===================================================================== */
+'use strict';
+
+const IS_DEMO = !FIREBASE_CONFIG.apiKey;
+
+const S = {
+  tab: 'cal',
+  demoOffset: 0,
+  uid: null,
+  user: null,               // {id, name, isAdmin, optics}
+  members: {},
+  votes: {},                // targetWeek: mid -> ranks{r1,r2,r3}
+  results: null,            // opticsResults(targetWeek)
+  curResults: null,         // opticsResults(votingWeek = 이번 주)
+  sched: {},                // targetWeek: day(string) -> {slots}
+  curSched: {},             // votingWeek
+  chat: [],
+  hw: null,                 // opticsHardware/current
+  hwLog: [],
+  remarks: [],              // opticsRemarks/log.entries (최신순, 최대 10개)
+  pendingRanks: null,
+  viewWeek: 'cur',          // 스케줄 탭: 'cur' | 'next'
+  overlay: false,
+  verify: null, _verifying: false,
+  histCache: {},
+  connected: false, authError: null, ensuring: false,
+  drag: null,               // {day, s0, s1}
+};
+
+const now = () => Date.now() + S.demoOffset;
+const $ = sel => document.querySelector(sel);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const memberName = id => S.members[id]?.name || '(알 수 없음)';
+const pinHashOf = (memberId, pin) => sha256Hex(memberId + '|' + pin);
+const canonMap = o => JSON.stringify(Object.keys(o || {}).sort().map(k => [k, o[k]]));
+function cycle() { return phaseOf(now()); }
+
+/* 멤버별 고정 색상 (정렬된 id 순서 기반 → 모든 기기에서 동일) */
+function memberColor(id) {
+  const ids = Object.keys(S.members).sort();
+  const i = Math.max(0, ids.indexOf(id));
+  const h = (i * 137.508) % 360; // golden angle
+  return { bg: `hsl(${h},70%,86%)`, fg: `hsl(${h},65%,30%)` };
+}
+
+function toast(msg, cls = '') {
+  const el = document.createElement('div');
+  el.className = 'toastmsg ' + cls;
+  el.textContent = msg;
+  $('#toast').appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+function fmtDT(ms) {
+  const d = new Date(ms + KST_OFFSET_MS);
+  const wd = OPT_DAYS[(kstDayNum(ms) + 3) % 7];
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${wd}) ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;
+}
+function fmtDur(ms) {
+  if (ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+  return (d ? d + '일 ' : '') + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
+}
+/* 해당 주 스케줄이 수정 가능한 기간인가 (발표 후 ~ 그 주 일요일 24시) */
+function editableWeek(weekIdx) {
+  const c = cycle();
+  const annc = weekStartMs(weekIdx - 1) + 3 * DAY_MS + 12 * 3600000;
+  return now() >= annc && now() < weekStartMs(weekIdx + 1);
+}
+function viewWeekIdx() { const c = cycle(); return S.viewWeek === 'next' ? c.targetWeek : c.votingWeek; }
+
+/* =====================================================================
+ * 저장소
+ * ===================================================================== */
+let store;
+
+function makeFirestoreStore() {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+  const FV = firebase.firestore.FieldValue;
+  let unsubs = [], listenWeeks = null;
+
+  async function start() {
+    try { await auth.signInAnonymously(); }
+    catch (e) { S.authError = 'Firebase 인증 실패: ' + e.message; render(); return; }
+    auth.onAuthStateChanged(u => { if (!u) return; S.uid = u.uid; resubscribe(); });
+  }
+
+  function resubscribe() {
+    const c = cycle();
+    listenWeeks = c.targetWeek;
+    unsubs.forEach(f => f()); unsubs = [];
+    const on = (q, cb) => unsubs.push(q.onSnapshot(cb, e => { console.error(e); toast('데이터 수신 오류: ' + e.message, 'err'); }));
+
+    on(db.collection('members'), snap => {
+      S.members = {}; snap.forEach(d => S.members[d.id] = { id: d.id, ...d.data() });
+      restoreSession(); S.connected = true; render();
+    });
+    on(db.collection('opticsVotes').where('week', '==', c.targetWeek), snap => {
+      const v = {}; snap.forEach(d => { const x = d.data(); v[x.memberId] = x.ranks || {}; });
+      S.votes = v;
+      if (S.pendingRanks === null && S.user && v[S.user.id]) S.pendingRanks = { ...v[S.user.id] };
+      render();
+    });
+    on(db.doc('opticsResults/' + c.targetWeek), d => { S.results = d.exists ? d.data() : null; S.verify = null; render(); });
+    on(db.doc('opticsResults/' + c.votingWeek), d => { S.curResults = d.exists ? d.data() : null; render(); });
+    on(db.collection('opticsSchedule').where('week', '==', c.targetWeek), snap => {
+      const m = {}; snap.forEach(d => { const x = d.data(); m[String(x.day)] = x; }); S.sched = m; render();
+    });
+    on(db.collection('opticsSchedule').where('week', '==', c.votingWeek), snap => {
+      const m = {}; snap.forEach(d => { const x = d.data(); m[String(x.day)] = x; }); S.curSched = m; render();
+    });
+    on(db.collection('opticsChat').orderBy('createdAt', 'desc').limit(120), snap => {
+      const arr = []; snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+      S.chat = arr.reverse(); renderChatLogOnly() || render();
+    });
+    on(db.doc('opticsHardware/current'), d => { S.hw = d.exists ? d.data() : null; render(); });
+    on(db.collection('opticsHardwareLog').orderBy('createdAt', 'desc').limit(25), snap => {
+      const arr = []; snap.forEach(d => arr.push(d.data())); S.hwLog = arr; render();
+    });
+    on(db.doc('opticsRemarks/log'), d => { S.remarks = d.exists ? (d.data().entries || []) : []; render(); });
+  }
+  setInterval(() => { if (S.uid && listenWeeks !== cycle().targetWeek) { S.results = null; S.votes = {}; S.sched = {}; S.curSched = {}; S.pendingRanks = null; resubscribe(); } }, 30000);
+
+  async function fetchWeekVotes(week) {
+    const snap = await db.collection('opticsVotes').where('week', '==', week).get();
+    const v = {}; snap.forEach(d => { const x = d.data(); v[x.memberId] = x.ranks || {}; });
+    return v;
+  }
+
+  return {
+    start,
+    async claim(memberId, pin) {
+      const m = S.members[memberId];
+      if (!m) throw new Error('멤버를 찾을 수 없습니다.');
+      const h = pinHashOf(memberId, pin);
+      if (m.pinHash && m.pinHash !== h) throw new Error('PIN이 일치하지 않습니다.');
+      await db.doc('members/' + memberId).update({ pinHash: h, uids: FV.arrayUnion(S.uid) });
+      await db.doc('uidmap/' + S.uid).set({ memberId });
+      localStorage.setItem('wos_member', memberId);
+      S.user = { id: memberId, name: m.name, isAdmin: !!m.isAdmin, optics: m.opticsActive === true };
+      S.pendingRanks = null; render();
+    },
+    logout() { localStorage.removeItem('wos_member'); S.user = null; S.pendingRanks = null; render(); },
+    async saveVote(ranks) {
+      const c = cycle();
+      await db.doc(`opticsVotes/${c.targetWeek}_${S.user.id}`).set({
+        week: c.targetWeek, memberId: S.user.id, ranks, updatedAt: FV.serverTimestamp(),
+      });
+    },
+    async deleteVote() {
+      const c = cycle();
+      await db.doc(`opticsVotes/${c.targetWeek}_${S.user.id}`).delete();
+    },
+    async ensureResults() {
+      const c = cycle();
+      if (S.results || S.ensuring || now() < c.announce) return;
+      S.ensuring = true;
+      try {
+        const v = await fetchWeekVotes(c.targetWeek);
+        const r = computeOpticsLottery(v);
+        await db.doc('opticsResults/' + c.targetWeek).set({
+          week: c.targetWeek, seed: r.seed, dayAssign: r.dayAssign,
+          unassignedMembers: r.unassignedMembers, votesJson: r.canonical,
+          createdAt: FV.serverTimestamp(), createdByUid: S.uid,
+        });
+        toast('요일 배정 결과가 확정·발표되었습니다.', 'okk');
+      } catch (e) { if (!/permission|already/i.test(e.message)) console.error(e); }
+      finally { S.ensuring = false; }
+    },
+    async verifyResults(week, doc) {
+      const v = await fetchWeekVotes(week);
+      const r = computeOpticsLottery(v);
+      return { ok: r.seed === doc.seed && canonMap(r.dayAssign) === canonMap(doc.dayAssign), recomputed: r };
+    },
+    /* 30분 슬롯 일괄 수정: changes = {slotIdx: memberId|""} */
+    async setSlots(week, day, changes) {
+      const payload = { week, day, slots: {} };
+      for (const [k, v] of Object.entries(changes)) payload.slots[k] = v;
+      await db.doc(`opticsSchedule/${week}_${day}`).set(payload, { merge: true });
+    },
+    async sendChat(text) {
+      await db.collection('opticsChat').add({
+        memberId: S.user.id, text, week: cycle().targetWeek, createdAt: FV.serverTimestamp(),
+      });
+    },
+    /* 관리자: 조율 채팅 전체 삭제 (오래된 메시지 포함 서버 전체를 400개 단위 배치로) */
+    async clearChat() {
+      for (;;) {
+        const snap = await db.collection('opticsChat').limit(400).get();
+        if (snap.empty) break;
+        const batch = db.batch();
+        snap.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        if (snap.size < 400) break;
+      }
+    },
+    async saveHardware(current, section, summary) {
+      await db.doc('opticsHardware/current').set(current);
+      await db.collection('opticsHardwareLog').add({
+        memberId: S.user.id, section, summary, createdAt: FV.serverTimestamp(), tsMs: Date.now(),
+      });
+    },
+    /* Remark: 트랜잭션으로 최신 10개만 유지(밀어내기) — 동시 기록에도 안전 */
+    async addRemark(text) {
+      const ref = db.doc('opticsRemarks/log');
+      await db.runTransaction(async tx => {
+        const d = await tx.get(ref);
+        const cur = d.exists ? (d.data().entries || []) : [];
+        tx.set(ref, { entries: optPushRemark(cur, { tsMs: Date.now(), memberId: S.user.id, text }) });
+      });
+    },
+    async deleteRemark(tsMs, memberId) {
+      const ref = db.doc('opticsRemarks/log');
+      await db.runTransaction(async tx => {
+        const d = await tx.get(ref);
+        const cur = d.exists ? (d.data().entries || []) : [];
+        tx.set(ref, { entries: cur.filter(e => !(e.tsMs === tsMs && e.memberId === memberId)) });
+      });
+    },
+    async loadHistory(week) {
+      const [rd, votes, ssnap] = await Promise.all([
+        db.doc('opticsResults/' + week).get(), fetchWeekVotes(week),
+        db.collection('opticsSchedule').where('week', '==', week).get(),
+      ]);
+      const sched = {}; ssnap.forEach(d => { const x = d.data(); sched[String(x.day)] = x; });
+      return { results: rd.exists ? rd.data() : null, votes, sched };
+    },
+    admin: {
+      addMember: (name) => db.collection('members').add({ name, pinHash: null, uids: [], isAdmin: false, active: false, opticsActive: true, createdAt: FV.serverTimestamp() }),
+      setOptics: (id, on) => db.doc('members/' + id).update({ opticsActive: on }),
+      setAdmin: (id, isAdmin) => db.doc('members/' + id).update({ isAdmin }),
+      resetPin: (id) => db.doc('members/' + id).update({ pinHash: null }),
+      resetDevices: (id) => db.doc('members/' + id).update({ uids: [] }),
+      deleteResults: (week) => db.doc('opticsResults/' + week).delete(),
+    },
+  };
+}
+
+/* ---------------- 데모 저장소 ---------------- */
+function makeDemoStore() {
+  const mem = { members: {}, votes: {}, results: {}, sched: {}, chat: [], hw: null, hwLog: [], remarks: [] };
+  ['김데모', '이샘플', '박예시', '최가상', '정테스트', '한체험'].forEach((n, i) => {
+    mem.members['m' + i] = { id: 'm' + i, name: n, pinHash: null, uids: [], isAdmin: i === 0, active: true, opticsActive: true };
+  });
+  const c0 = phaseOf(Date.now());
+  mem.votes[c0.targetWeek] = {
+    m1: { r1: 0, r2: 1 }, m2: { r1: 1 }, m3: { r1: 1, r2: 2, r3: 3 }, m4: { r1: 5, r2: 6 }, m5: { r1: 0, r2: 2 },
+  };
+  mem.hw = {
+    laser: [
+      { id: 'l1', band: '405 nm', controller: 'Controller A', turret: '2', updatedAt: Date.now() - 86400000 * 3, updatedBy: 'm1' },
+      { id: 'l2', band: '633 nm', controller: 'Controller B', turret: '3', updatedAt: Date.now() - 86400000, updatedBy: 'm3' },
+    ],
+    turret: [
+      { id: 't1', no: '1', mirror: 'Silver mirror', updatedAt: Date.now() - 86400000 * 5, updatedBy: 'm2' },
+      { id: 't2', no: '2', mirror: 'Dichroic 550', updatedAt: Date.now() - 86400000 * 2, updatedBy: 'm1' },
+    ],
+    snspd: [1, 2, 3, 4].map(ch => ({ ch, range: ch <= 2 ? '900-1300 nm' : '', detFiber: ch === 1, ttl: ch === 1, ttlPower: false, updatedAt: Date.now() - 86400000 * ch, updatedBy: 'm' + ch })),
+    powermeter: [1, 2, 3].map(no => ({ no, detector: no === 1 ? 'S120C' : '', position: no === 1 ? '샘플 앞' : '', updatedAt: Date.now() - 86400000 * no, updatedBy: 'm1' })),
+    extras: [{ id: 'e1', item: 'ND 1.0', location: '레이저 출력단 직후', updatedAt: Date.now() - 3600000 * 5, updatedBy: 'm4' }],
+  };
+  mem.remarks = [
+    { tsMs: Date.now() - 3600000 * 20, memberId: 'm3', text: '633 nm 레이저 파워가 평소보다 10% 낮게 측정됨 — 컨트롤러 재부팅 후 정상. 참고 바랍니다.' },
+    { tsMs: Date.now() - 86400000 * 2, memberId: 'm1', text: '광학테이블 오른쪽 커버 나사 하나 분실. 임시로 테이프 고정해둠.' },
+  ];
+  mem.chat = [
+    { id: 'c1', memberId: 'm2', text: '목요일 오전만 쓰고 오후는 비울게요. 필요하신 분?', createdAt: Date.now() - 3600000 },
+    { id: 'c2', memberId: 'm3', text: '저 목요일 오후 받을게요! 스케줄에서 바로 수정할게요.', createdAt: Date.now() - 3000000 },
+  ];
+
+  function pushState() {
+    const c = cycle();
+    S.members = { ...mem.members };
+    S.votes = { ...(mem.votes[c.targetWeek] || {}) };
+    if (S.pendingRanks === null && S.user && S.votes[S.user.id]) S.pendingRanks = { ...S.votes[S.user.id] };
+    S.results = mem.results[c.targetWeek] || null;
+    S.curResults = mem.results[c.votingWeek] || null;
+    S.sched = JSON.parse(JSON.stringify(mem.sched[c.targetWeek] || {}));
+    S.curSched = JSON.parse(JSON.stringify(mem.sched[c.votingWeek] || {}));
+    S.chat = [...mem.chat];
+    S.hw = mem.hw ? JSON.parse(JSON.stringify(mem.hw)) : null;
+    S.hwLog = [...mem.hwLog];
+    S.remarks = [...mem.remarks];
+    S.connected = true; render();
+  }
+
+  return {
+    start() { S.uid = 'demo-uid'; pushState(); },
+    async claim(memberId, pin) {
+      const m = mem.members[memberId];
+      const h = pinHashOf(memberId, pin);
+      if (m.pinHash && m.pinHash !== h) throw new Error('PIN이 일치하지 않습니다.');
+      m.pinHash = h;
+      S.user = { id: memberId, name: m.name, isAdmin: !!m.isAdmin, optics: m.opticsActive === true };
+      S.pendingRanks = null; pushState();
+    },
+    logout() { S.user = null; S.pendingRanks = null; pushState(); },
+    async saveVote(ranks) { const c = cycle(); (mem.votes[c.targetWeek] = mem.votes[c.targetWeek] || {})[S.user.id] = { ...ranks }; pushState(); },
+    async deleteVote() { const c = cycle(); delete (mem.votes[c.targetWeek] || {})[S.user.id]; pushState(); },
+    async ensureResults() {
+      const c = cycle();
+      if (mem.results[c.targetWeek] || now() < c.announce) return;
+      const r = computeOpticsLottery(mem.votes[c.targetWeek] || {});
+      mem.results[c.targetWeek] = { week: c.targetWeek, seed: r.seed, dayAssign: r.dayAssign, unassignedMembers: r.unassignedMembers, votesJson: r.canonical };
+      toast('(데모) 요일 배정 결과가 확정·발표되었습니다.', 'okk'); pushState();
+    },
+    async verifyResults(week, doc) {
+      const r = computeOpticsLottery(mem.votes[week] || {});
+      return { ok: r.seed === doc.seed && canonMap(r.dayAssign) === canonMap(doc.dayAssign), recomputed: r };
+    },
+    async setSlots(week, day, changes) {
+      const w = mem.sched[week] = mem.sched[week] || {};
+      const doc = w[String(day)] = w[String(day)] || { week, day, slots: {} };
+      Object.assign(doc.slots, changes); pushState();
+    },
+    async sendChat(text) { mem.chat.push({ id: 'c' + Math.random(), memberId: S.user.id, text, createdAt: Date.now() }); pushState(); },
+    async clearChat() { mem.chat = []; pushState(); },
+    async saveHardware(current, section, summary) {
+      mem.hw = JSON.parse(JSON.stringify(current));
+      mem.hwLog.unshift({ memberId: S.user.id, section, summary, tsMs: Date.now(), createdAt: Date.now() });
+      pushState();
+    },
+    async addRemark(text) {
+      mem.remarks = optPushRemark(mem.remarks, { tsMs: Date.now(), memberId: S.user.id, text });
+      pushState();
+    },
+    async deleteRemark(tsMs, memberId) {
+      mem.remarks = mem.remarks.filter(e => !(e.tsMs === tsMs && e.memberId === memberId));
+      pushState();
+    },
+    async loadHistory(week) {
+      return { results: mem.results[week] || null, votes: mem.votes[week] || {}, sched: mem.sched[week] || {} };
+    },
+    admin: {
+      addMember: async (name) => { const id = 'm' + Math.random().toString(36).slice(2, 8); mem.members[id] = { id, name, pinHash: null, uids: [], isAdmin: false, active: false, opticsActive: true }; pushState(); },
+      setOptics: async (id, on) => { mem.members[id].opticsActive = on; pushState(); },
+      setAdmin: async (id, v) => { mem.members[id].isAdmin = v; pushState(); },
+      resetPin: async (id) => { mem.members[id].pinHash = null; pushState(); },
+      resetDevices: async (id) => { mem.members[id].uids = []; pushState(); },
+      deleteResults: async (week) => { delete mem.results[week]; pushState(); },
+    },
+    _demo: { pushState, mem },
+  };
+}
+
+function restoreSession() {
+  if (S.user) return;
+  const id = localStorage.getItem('wos_member') || localStorage.getItem('wss_member');
+  if (id && S.members[id] && (S.members[id].opticsActive === true || S.members[id].isAdmin) &&
+      (IS_DEMO || (S.members[id].uids || []).includes(S.uid))) {
+    const m = S.members[id];
+    S.user = { id, name: m.name, isAdmin: !!m.isAdmin, optics: m.opticsActive === true };
+  }
+}
+
+async function maybeVerify() {
+  if (!S.results || S.verify || S._verifying) return;
+  S._verifying = true;
+  try {
+    const v = await store.verifyResults(cycle().targetWeek, S.results);
+    S.verify = { ok: v.ok }; render();
+  } catch (e) {} finally { S._verifying = false; }
+}
+
+/* =====================================================================
+ * Weekly Optics Scheduler - 앱 (2/3): 렌더링 (캘린더·투표·조율채팅)
+ * ===================================================================== */
+
+const TABS = [
+  ['cal', '📅 스케줄'], ['vote', '🗳️ 순위 투표'], ['coord', '💬 일정 조율'],
+  ['results', '🎲 배정 결과'], ['hw', '🛠 Hardware Log'], ['remark', '📝 Remark'], ['members', '👥 명단'], ['rules', '📖 규칙'], ['admin', '🔧 관리자'],
+];
+
+function render() {
+  renderHeader(); renderPhasebar(); renderTabs();
+  const c = cycle();
+  if (c.phase === 'BOOKING' && !S.results && S.uid && S.connected) store.ensureResults();
+  if (S.results && !S.verify) maybeVerify();
+  const fn = { cal: renderCal, vote: renderVote, coord: renderCoord, results: renderResults,
+               hw: renderHw, remark: renderRemark, members: renderMembers, rules: renderRules, admin: renderAdmin }[S.tab];
+  $('#main').innerHTML = fn ? fn() : '';
+  bindMain();
+}
+
+function renderHeader() {
+  const c = cycle();
+  $('#weekLabel').textContent = `광학방 주간 스케줄 · 대상 주: ${weekLabel(c.targetWeek)}`;
+  let h = '';
+  if (S.authError) h += `<span class="badge b-red">연결 오류</span>`;
+  if (S.user) {
+    h += `<span class="userchip"><span class="dot"></span>${esc(S.user.name)}${S.user.isAdmin ? ' <span class="badge b-violet">관리자</span>' : ''}${S.user.optics ? '' : ' <span class="badge b-gray">광학 비활성</span>'}</span>
+          <button class="btn sm" id="btnLogout">로그아웃</button>`;
+  } else h += `<button class="btn primary" id="btnLogin">멤버 로그인</button>`;
+  $('#headRight').innerHTML = h;
+  $('#btnLogin')?.addEventListener('click', openLogin);
+  $('#btnLogout')?.addEventListener('click', () => store.logout());
+  $('#demoBanner').innerHTML = IS_DEMO
+    ? `<div class="demo-banner"><b>데모 모드</b> — 가상 데이터로 동작 중 (저장 안 됨).
+       &nbsp;국면 미리보기: <button class="btn sm" data-demo="vote">투표중</button> <button class="btn sm" data-demo="wait">추첨 대기</button> <button class="btn sm" data-demo="book">발표·조율</button></div>`
+    : (S.authError ? `<div class="demo-banner"><b>⚠ ${esc(S.authError)}</b></div>` : '');
+  document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => {
+    const c2 = phaseOf(Date.now());
+    const mode = b.dataset.demo;
+    if (mode === 'vote') S.demoOffset = c2.monday + 3600000 * 26 - Date.now();
+    if (mode === 'wait') S.demoOffset = c2.monday + 3 * DAY_MS + 3600000 * 9 - Date.now();
+    if (mode === 'book') { S.demoOffset = c2.monday + 3 * DAY_MS + 3600000 * 12.5 - Date.now(); S.viewWeek = 'next'; }
+    S.results = null; S.verify = null;
+    if (store._demo) store._demo.mem.results = {}; // 데모: 국면 전환 시 결과 재계산 유도
+    store._demo?.pushState();
+  }));
+}
+
+function renderPhasebar() {
+  const c = cycle();
+  const P = c.phase;
+  const badge = P === 'VOTING' ? '<span class="badge b-accent">1단계 · 요일 순위 투표 진행중</span>'
+    : P === 'WAITING' ? '<span class="badge b-amber">2단계 · 투표 마감 — 배정 대기</span>'
+    : '<span class="badge b-green">3단계 · 배정 확정 — 자유 조율 진행중</span>';
+  const target = P === 'VOTING' ? c.voteClose : P === 'WAITING' ? c.announce : weekStartMs(c.targetWeek + 1);
+  const targetLabel = P === 'VOTING' ? '투표 마감까지' : P === 'WAITING' ? '배정 발표까지' : '대상 주 종료까지';
+  const steps = [
+    ['요일 순위 투표', '월 00:00 ~ 수 24:00 · 1/2/3순위 (선택)', P === 'VOTING' ? 'on' : 'done'],
+    ['마감·배정 대기', '목 00:00 ~ 12:00', P === 'WAITING' ? 'on' : (P === 'VOTING' ? '' : 'done')],
+    ['발표 + 자유 조율', '목 12:00 발표 → 전원 실시간 수정·채팅 조율', P === 'BOOKING' ? 'on' : ''],
+  ];
+  $('#phasebar').innerHTML = `
+    <div class="toprow">${badge}
+      <span class="muted">${targetLabel}</span>
+      <span class="countdown" id="cd" data-target="${target}">${fmtDur(target - now())}</span>
+      <span class="muted" style="margin-left:auto">대상: <b>${weekLabel(c.targetWeek)}</b></span>
+    </div>
+    <div class="steps">${steps.map(s => `<div class="step ${s[2]}"><b>${s[0]}</b>${s[1]}</div>`).join('')}</div>`;
+}
+
+function renderTabs() {
+  $('#tabs').innerHTML = TABS.filter(([k]) => k !== 'admin' || S.user?.isAdmin)
+    .map(([k, l]) => `<button class="${S.tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('');
+  document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { S.tab = b.dataset.tab; render(); }));
+}
+
+/* ---------------- 주간 캘린더 컴포넌트 ---------------- */
+function calCtx(weekIdx) {
+  const c = cycle();
+  const isNext = weekIdx === c.targetWeek;
+  return {
+    weekIdx,
+    results: isNext ? S.results : S.curResults,
+    sched: isNext ? S.sched : S.curSched,
+    votes: isNext ? S.votes : null,
+  };
+}
+function calendarHtml(weekIdx, mini) {
+  const ctx = calCtx(weekIdx);
+  const dayAssign = ctx.results?.dayAssign || {};
+  const eff = optEffectiveSchedule(dayAssign, ctx.sched);
+  const canEdit = !!(S.user && (S.user.optics || S.user.isAdmin) && editableWeek(weekIdx) && ctx.results);
+  const cellCls = canEdit ? 'cell editable' : 'cell';
+
+  // 헤더
+  let hd = `<div class="hd"></div>`;
+  for (let d = 0; d < 7; d++) {
+    const owner = dayAssign[String(d)];
+    hd += `<div class="hd">${OPT_DAYS[d]}<small>${fmtDate(optDayDate(weekIdx, d))}${owner ? ' · ' + esc(memberName(owner)) : ''}</small></div>`;
+  }
+  // 희망순위 오버레이 행
+  let ov = '';
+  if (S.overlay) {
+    const votes = ctx.votes || {};
+    ov = `<div class="rankchips"></div>`;
+    for (let d = 0; d < 7; d++) {
+      let chips = '';
+      for (const [mid, r] of Object.entries(votes)) {
+        [['r1', 1], ['r2', 2], ['r3', 3]].forEach(([k, n]) => {
+          if (r[k] === d) chips += `<span class="rankchip rc${n}">${'①②③'[n - 1]} ${esc(memberName(mid))}</span>`;
+        });
+      }
+      ov += `<div class="rankchips">${chips || '<span class="muted" style="font-size:10px">-</span>'}</div>`;
+    }
+  }
+  // 본문 (48행)
+  let body = '';
+  for (let s = 0; s < OPT_SLOTS_PER_DAY; s++) {
+    const hour = s % 2 === 0;
+    const tlab = mini ? (s % 4 === 0 ? String(s / 2) + '시' : '') : (hour ? optSlotLabel(s) : '');
+    body += `<div class="tl">${tlab}</div>`;
+    for (let d = 0; d < 7; d++) {
+      const o = eff[d][s];
+      const runStart = o !== null && (s === 0 || eff[d][s - 1] !== o);
+      let style = '';
+      if (o) { const col = memberColor(o); style = ` style="background:${col.bg}"`; }
+      const lbl = runStart ? `<span class="lbl" style="color:${o ? memberColor(o).fg : ''}">${esc(memberName(o))}</span>` : '';
+      body += `<div class="${cellCls}${hour ? ' hour' : ''}" data-day="${d}" data-slot="${s}" data-week="${weekIdx}"${style}>${lbl}</div>`;
+    }
+  }
+  return `<div class="calwrap"><div class="cal${mini ? ' mini' : ''}" data-calweek="${weekIdx}" data-editable="${canEdit ? 1 : 0}">${hd}${ov}${body}</div></div>`;
+}
+
+/* ---------------- 탭: 스케줄 ---------------- */
+function renderCal() {
+  const c = cycle();
+  const w = viewWeekIdx();
+  const ctx = calCtx(w);
+  const canEdit = !!(S.user && (S.user.optics || S.user.isAdmin) && editableWeek(w) && ctx.results);
+  let note;
+  if (!ctx.results) {
+    note = w === c.targetWeek
+      ? `아직 배정 발표 전입니다 (발표: ${fmtDT(c.announce)}). 발표 후 이 화면에서 전원이 자유롭게 수정·조율할 수 있습니다.`
+      : '이 주의 배정 데이터가 없습니다.';
+  } else if (canEdit) {
+    note = '칸을 <b>클릭</b>하거나 <b>드래그</b>해서 30분 단위로 수정하세요 (사용자 지정·비우기 가능, 전원 수정 가능). 변경은 즉시 모두에게 반영되고 1분 내 구글캘린더에 동기화됩니다.';
+  } else {
+    note = S.user ? '이 주는 수정 가능 기간이 아닙니다.' : '수정하려면 로그인하세요.';
+  }
+  return `<div class="card">
+    <div class="flexrow" style="margin-bottom:10px">
+      <h2 style="margin:0">주간 스케줄</h2>
+      <span class="weekchips">
+        <button data-vw="cur" class="${S.viewWeek === 'cur' ? 'on' : ''}">이번 주 (${weekLabel(c.votingWeek)})</button>
+        <button data-vw="next" class="${S.viewWeek === 'next' ? 'on' : ''}">다음 주 (${weekLabel(c.targetWeek)})</button>
+      </span>
+      <label class="muted" style="margin-left:auto;cursor:pointer;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="ovToggle" ${S.overlay ? 'checked' : ''} style="accent-color:var(--accent)">
+        희망순위 표시 <span class="rankchip rc1" style="opacity:1">①1순위</span><span class="rankchip rc2" style="opacity:1">②2순위</span><span class="rankchip rc3" style="opacity:1">③3순위</span>
+      </label>
+    </div>
+    <p class="muted" style="margin-bottom:10px">${note}</p>
+    ${calendarHtml(w, false)}
+  </div>`;
+}
+
+/* ---------------- 탭: 순위 투표 ---------------- */
+function renderVote() {
+  const c = cycle();
+  if (!S.user) return `<div class="card"><h2>요일 순위 투표</h2><p class="muted">투표하려면 먼저 로그인해주세요.</p></div>`;
+  if (!S.user.optics) return `<div class="card"><h2>요일 순위 투표</h2><p class="muted">광학 스케줄 참여가 활성화되지 않은 계정입니다. 관리자에게 활성화를 요청하세요.</p></div>`;
+  if (c.phase !== 'VOTING') {
+    const my = S.votes[S.user.id];
+    return `<div class="card"><h2>요일 순위 투표</h2>
+      <p class="muted">지금은 투표 기간이 아닙니다. 투표는 <b>매주 월 00:00 ~ 수 24:00</b>. 다음 시작: <b>${fmtDT(weekStartMs(c.votingWeek + 1))}</b></p>
+      ${my ? `<div class="note">이번 주 내 투표(마감됨): ${['r1','r2','r3'].filter(k => my[k] !== undefined).map((k, i) => `${i + 1}순위 ${OPT_DAYS[my[k]]}`).join(', ')}</div>` : ''}</div>`;
+  }
+  if (S.pendingRanks === null) S.pendingRanks = { ...(S.votes[S.user.id] || {}) };
+  const p = S.pendingRanks;
+  const saved = JSON.stringify(S.votes[S.user.id] || {}) === JSON.stringify(p);
+  const myRankOfDay = d => { for (const [k, n] of [['r1', 1], ['r2', 2], ['r3', 3]]) if (p[k] === d) return n; return 0; };
+  // 요일별 집계
+  const agg = Array.from({ length: 7 }, () => [0, 0, 0]);
+  for (const r of Object.values(S.votes)) [['r1', 0], ['r2', 1], ['r3', 2]].forEach(([k, i]) => { if (r[k] !== undefined) agg[r[k]][i]++; });
+  const cards = Array.from({ length: 7 }, (_, d) => {
+    const mine = myRankOfDay(d);
+    const a = agg[d];
+    return `<div class="daycard ${mine ? 'picked' : ''}" data-votday="${d}">
+      ${mine ? `<span class="myrank">${'①②③'[mine - 1]}</span>` : ''}
+      <b>${OPT_DAYS[d]}</b><div class="date">${fmtDate(optDayDate(c.targetWeek, d))}</div>
+      <div class="agg">${a[0] + a[1] + a[2] ? `①${a[0]} ②${a[1]} ③${a[2]}` : '지원 없음'}</div>
+    </div>`;
+  }).join('');
+  const picks = ['r1', 'r2', 'r3'].filter(k => p[k] !== undefined);
+  return `<div class="card">
+    <h2>요일 순위 투표 — ${weekLabel(c.targetWeek)} 대상</h2>
+    <p class="muted" style="margin:6px 0 12px">원하는 요일을 누를 때마다 <b>1순위 → 2순위 → 3순위</b> 순서로 지정되고, 지정된 요일을 다시 누르면 해제됩니다 (아래 순위는 자동으로 당겨짐). 3개를 모두 채울 필요는 없으며, <b>적게 투표할수록 동순위 경쟁에서 우선</b>합니다.</p>
+    <div class="flexrow" style="margin-bottom:10px">
+      <span>내 투표: ${picks.length ? picks.map((k, i) => `<span class="badge b-accent">${i + 1}순위 ${OPT_DAYS[p[k]]}</span>`).join(' ') : '<span class="muted">없음</span>'}</span>
+      <span style="margin-left:auto" class="${saved ? 'muted' : 'verify-bad'}">${saved ? '저장됨 ✓' : '변경사항 있음 — 저장 필요!'}</span>
+    </div>
+    <div class="daycards">${cards}</div>
+    <div class="flexrow" style="margin-top:14px">
+      <button class="btn primary" id="btnSaveVote" ${saved ? 'disabled' : ''}>투표 저장</button>
+      <button class="btn" id="btnResetVote">저장된 상태로 되돌리기</button>
+      <button class="btn danger" id="btnClearVote">투표 전체 취소</button>
+      <span class="muted">마감: ${fmtDT(c.voteClose)} (수요일 24시)</span>
+    </div></div>`;
+}
+
+/* ---------------- 탭: 일정 조율 (미니 스케줄 + 채팅) ---------------- */
+function renderCoord() {
+  const c = cycle();
+  const w = viewWeekIdx();
+  const msgs = S.chat.map(m => {
+    const mine = S.user && m.memberId === S.user.id;
+    const t = m.createdAt?.toMillis ? m.createdAt.toMillis() : (typeof m.createdAt === 'number' ? m.createdAt : Date.now());
+    return `<div class="msg ${mine ? 'mine' : ''}">
+      <div class="meta">${esc(memberName(m.memberId))} · ${fmtDT(t)}</div>
+      <div class="bubble">${esc(m.text)}</div></div>`;
+  }).join('');
+  return `<div class="card">
+    <div class="flexrow" style="margin-bottom:10px">
+      <h2 style="margin:0">일정 조율 논의</h2>
+      <span class="weekchips">
+        <button data-vw="cur" class="${S.viewWeek === 'cur' ? 'on' : ''}">이번 주</button>
+        <button data-vw="next" class="${S.viewWeek === 'next' ? 'on' : ''}">다음 주</button>
+      </span>
+      <label class="muted" style="margin-left:auto;cursor:pointer;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="ovToggleCoord" ${S.overlay ? 'checked' : ''} style="accent-color:var(--accent)">
+        희망순위 표시 <span class="rankchip rc1" style="opacity:1">①1순위</span><span class="rankchip rc2" style="opacity:1">②2순위</span><span class="rankchip rc3" style="opacity:1">③3순위</span>
+      </label>
+    </div>
+    <p class="muted" style="margin-bottom:10px">미니 스케줄에서 바로 수정 → 즉시 반영${S.overlay ? ' · 희망순위는 다음 주 스케줄에서만 표시됩니다' : ''}</p>
+    <div class="coord">
+      <div>${calendarHtml(w, true)}</div>
+      <div class="chatbox">
+        <div class="chatlog" id="chatlog">${msgs || '<p class="muted" style="text-align:center;margin-top:20px">아직 메시지가 없습니다.<br>배정 결과를 두고 자유롭게 조율하세요!</p>'}</div>
+        <div class="chatin">
+          <input id="chatText" placeholder="${S.user?.optics ? '메시지 입력 후 Enter' : '광학 활성 멤버만 채팅 가능'}" ${S.user?.optics ? '' : 'disabled'} maxlength="500">
+          <button class="btn primary" id="btnChatSend" ${S.user?.optics ? '' : 'disabled'}>전송</button>
+        </div>
+        ${S.user?.isAdmin ? '<div style="padding:6px 10px;border-top:1px solid var(--line);background:#fafbfe;text-align:right"><button class="btn sm danger" id="btnChatClear">🗑 채팅 전체 초기화 (관리자)</button></div>' : ''}
+      </div>
+    </div></div>`;
+}
+/* 채팅 수신 시 로그만 갱신(입력 초기화 방지). 성공 시 true */
+function renderChatLogOnly() {
+  const el = $('#chatlog');
+  if (!el || S.tab !== 'coord') return false;
+  const msgs = S.chat.map(m => {
+    const mine = S.user && m.memberId === S.user.id;
+    const t = m.createdAt?.toMillis ? m.createdAt.toMillis() : (typeof m.createdAt === 'number' ? m.createdAt : Date.now());
+    return `<div class="msg ${mine ? 'mine' : ''}"><div class="meta">${esc(memberName(m.memberId))} · ${fmtDT(t)}</div><div class="bubble">${esc(m.text)}</div></div>`;
+  }).join('');
+  el.innerHTML = msgs;
+  el.scrollTop = el.scrollHeight;
+  return true;
+}
+
+/* ---------------- 탭: 배정 결과 ---------------- */
+function renderResults() {
+  const c = cycle();
+  const weekOpts = [];
+  for (let w = c.targetWeek; w >= c.targetWeek - 8; w--) weekOpts.push(w);
+  const sel = S.resultsWeek ?? c.targetWeek;
+  const isCurrent = sel === c.targetWeek;
+  const data = isCurrent ? { results: S.results, votes: S.votes } : S.histCache[sel];
+  let body = '';
+  if (!isCurrent && !data) {
+    body = '<p class="muted">불러오는 중...</p>';
+    store.loadHistory(sel).then(async d => {
+      let verify = null;
+      if (d.results) { try { verify = await store.verifyResults(sel, d.results); } catch (e) {} }
+      S.histCache[sel] = { ...d, verify }; render();
+    }).catch(() => { S.histCache[sel] = { results: null, votes: {} }; render(); });
+  } else if (!data?.results) {
+    body = isCurrent && c.phase !== 'BOOKING'
+      ? `<p class="muted">배정 발표 전입니다. 발표: <b>${fmtDT(c.announce)}</b> (목요일 12:00). 발표 즉시 자동 표시됩니다.</p>`
+      : '<p class="muted">해당 주차의 배정 데이터가 없습니다.</p>';
+  } else {
+    const r = data.results;
+    const verify = isCurrent ? S.verify : (data.verify && { ok: data.verify.ok });
+    const vbadge = verify == null ? '<span class="badge b-gray">검증 중...</span>'
+      : verify.ok ? '<span class="badge b-green">✓ 검증 완료 — 투표 데이터로부터 재계산한 결과와 일치</span>'
+      : '<span class="badge b-red">⚠ 검증 불일치 — 관리자에게 결과 재생성을 요청하세요</span>';
+    const rows = Array.from({ length: 7 }, (_, d) => {
+      const m = (r.dayAssign || {})[String(d)];
+      return `<tr><td>${OPT_DAYS[d]} (${fmtDate(optDayDate(sel, d))})</td>
+        <td>${m ? '<b>' + esc(memberName(m)) + '</b>' : '<span class="muted">미배정 — 자유 조율 가능</span>'}</td></tr>`;
+    }).join('');
+    body = `
+      <div class="flexrow" style="margin-bottom:10px">${vbadge}</div>
+      <table class="list"><tr><th>요일</th><th>배정자 (00-24시 기본 배정)</th></tr>${rows}</table>
+      <h3>아쉽게 배정받지 못한 인원</h3>
+      <p class="muted">${(r.unassignedMembers || []).length ? r.unassignedMembers.map(m => esc(memberName(m))).join(', ') + ' — 일정 조율 탭에서 협의해 시간을 나눠 쓸 수 있습니다.' : '없음 (투표자 전원 배정)'}</p>
+      <h3>공정성 증빙</h3>
+      <p class="muted" style="word-break:break-all">배정 기준: ① 무당첨자 우선 → ② 순위 → ③ 투표 수 적은 사람 → ④ 시드 무작위.
+      시드(투표 데이터 SHA-256): <code class="k">${esc(r.seed || '')}</code><br>
+      시드가 투표 내용 자체에서 결정되므로 누구도 결과를 조작·예측할 수 없으며, 모든 접속자가 독립 재검증합니다.</p>`;
+  }
+  return `<div class="card">
+    <div class="flexrow"><h2 style="margin:0">요일 배정 결과</h2>
+      <select id="selWeek" style="margin-left:auto;border:1.5px solid var(--line);border-radius:8px;padding:6px 10px;font-family:inherit">
+        ${weekOpts.map(w => `<option value="${w}" ${w === sel ? 'selected' : ''}>${weekLabel(w)}${w === c.targetWeek ? ' (다음 주)' : w === c.votingWeek ? ' (이번 주)' : ''}</option>`).join('')}
+      </select></div>
+    <div style="margin-top:10px">${body}</div></div>`;
+}
+
+/* =====================================================================
+ * Weekly Optics Scheduler - 앱 (3/3): Hardware Log·명단·규칙·관리자·이벤트
+ * ===================================================================== */
+
+/* ---------------- Hardware Log ---------------- */
+function defaultHw() {
+  return {
+    laser: [],
+    turret: [],
+    snspd: [1, 2, 3, 4].map(ch => ({ ch, range: '', detFiber: false, ttl: false, ttlPower: false, updatedAt: 0, updatedBy: '' })),
+    powermeter: [1, 2, 3].map(no => ({ no, detector: '', position: '', updatedAt: 0, updatedBy: '' })),
+    extras: [],
+  };
+}
+function hwMeta(row) {
+  if (!row.updatedAt) return '<span class="meta">-</span>';
+  return `<span class="meta">${optFmtDateDow(row.updatedAt)}<br>${esc(memberName(row.updatedBy))}</span>`;
+}
+const hwEdit = { section: null }; // 현재 편집 중 섹션
+
+function renderHw() {
+  const hw = S.hw ? JSON.parse(JSON.stringify(S.hw)) : defaultHw();
+  ['laser', 'turret', 'snspd', 'powermeter', 'extras'].forEach(k => { if (!hw[k]) hw[k] = defaultHw()[k]; });
+  const canEdit = !!(S.user && (S.user.optics || S.user.isAdmin));
+  const ed = s => hwEdit.section === s;
+  const editBtn = s => canEdit ? (ed(s)
+    ? `<button class="btn sm primary" data-hwsave="${s}">저장</button> <button class="btn sm" data-hwcancel>취소</button>`
+    : `<button class="btn sm" data-hwedit="${s}">수정</button>`) : '';
+  const txt = (s, i, f, v, ph = '') => ed(s)
+    ? `<input type="text" data-hw="${s}.${i}.${f}" value="${esc(v || '')}" placeholder="${ph}">`
+    : (v ? esc(v) : '<span class="muted">-</span>');
+  const chk = (s, i, f, v, label) => `<label style="white-space:nowrap;font-size:12.5px"><input type="checkbox" data-hw="${s}.${i}.${f}" ${v ? 'checked' : ''} ${ed(s) ? '' : 'disabled'} style="accent-color:var(--accent)"> ${label}</label>`;
+
+  const laserRows = hw.laser.map((r, i) => `<tr>
+    <td>${txt('laser', i, 'band', r.band, '예: 633 nm')}</td>
+    <td>${txt('laser', i, 'controller', r.controller, '연결 컨트롤러')}</td>
+    <td>${txt('laser', i, 'turret', r.turret, 'Align된 Turret #')}</td>
+    <td>${hwMeta(r)}</td>
+    ${ed('laser') ? `<td><button class="btn sm danger" data-hwdel="laser.${i}">삭제</button></td>` : ''}</tr>`).join('')
+    || `<tr><td colspan="5" class="muted">등록된 레이저가 없습니다.</td></tr>`;
+
+  const turretRows = hw.turret.map((r, i) => `<tr>
+    <td>${txt('turret', i, 'no', r.no, 'Turret 번호')}</td>
+    <td>${txt('turret', i, 'mirror', r.mirror, '장착 Mirror')}</td>
+    <td>${hwMeta(r)}</td>
+    ${ed('turret') ? `<td><button class="btn sm danger" data-hwdel="turret.${i}">삭제</button></td>` : ''}</tr>`).join('')
+    || `<tr><td colspan="4" class="muted">등록된 Turret이 없습니다.</td></tr>`;
+
+  const snspdRows = hw.snspd.map((r, i) => `<tr>
+    <td><b>SNSPD ${r.ch}</b></td>
+    <td>${txt('snspd', i, 'range', r.range, '연결 채널 파장범위')}</td>
+    <td>${chk('snspd', i, 'detFiber', r.detFiber, 'Detector(Fiber)')}<br>${chk('snspd', i, 'ttl', r.ttl, 'TTL converter')}<br>${chk('snspd', i, 'ttlPower', r.ttlPower, 'TTL Power cable')}</td>
+    <td>${hwMeta(r)}</td></tr>`).join('');
+
+  const pmRows = hw.powermeter.map((r, i) => `<tr>
+    <td><b>Powermeter ${r.no}</b></td>
+    <td>${txt('powermeter', i, 'detector', r.detector, 'Connected detector')}</td>
+    <td>${txt('powermeter', i, 'position', r.position, 'Position')}</td>
+    <td>${hwMeta(r)}</td></tr>`).join('');
+
+  const exRows = hw.extras.map((r, i) => `<tr>
+    <td>${txt('extras', i, 'item', r.item, '예: ND 0.5 / Pinhole 50um')}</td>
+    <td>${txt('extras', i, 'location', r.location, '어느 위치에? (주관식)')}</td>
+    <td>${hwMeta(r)}</td>
+    ${ed('extras') ? `<td><button class="btn sm danger" data-hwdel="extras.${i}">삭제(제거)</button></td>` : ''}</tr>`).join('')
+    || `<tr><td colspan="4" class="muted">추가 광학요소 없음.</td></tr>`;
+
+  const logRows = S.hwLog.map(l => {
+    const t = l.tsMs || (l.createdAt?.toMillis ? l.createdAt.toMillis() : 0);
+    return `<tr><td class="meta" style="white-space:nowrap">${t ? optFmtDateDow(t) : '-'}</td>
+      <td><b>${esc(memberName(l.memberId))}</b></td><td><span class="badge b-gray">${esc(l.section)}</span></td>
+      <td style="white-space:pre-wrap">${esc(l.summary)}</td></tr>`;
+  }).join('') || '<tr><td colspan="4" class="muted">아직 변경 이력이 없습니다.</td></tr>';
+
+  return `<div class="card hw">
+    <h2>🛠 Hardware Log — 현재 장비 구성 현황판</h2>
+    <p class="muted" style="margin:6px 0 4px">측정 전 반드시 확인하고, <b>부품을 추가·제거·변경하면 즉시 여기서 수정</b>하세요. 저장 시 변경 내용이 자동으로 기록되고 Slack 채널에 1분 내 공지됩니다.</p>
+    ${canEdit ? '' : '<div class="note">수정하려면 광학 활성 멤버로 로그인하세요.</div>'}
+
+    <h3>LASER ${editBtn('laser')} ${ed('laser') ? '<button class="btn sm" data-hwadd="laser">+ 파장 추가</button>' : ''}</h3>
+    <table class="list"><tr><th>파장대역</th><th>연결 컨트롤러</th><th>Align Turret #</th><th>최종 변경</th>${ed('laser') ? '<th></th>' : ''}</tr>${laserRows}</table>
+
+    <h3>Microscope Turret ${editBtn('turret')} ${ed('turret') ? '<button class="btn sm" data-hwadd="turret">+ Turret 추가</button>' : ''}</h3>
+    <table class="list"><tr><th>Turret #</th><th>장착 Mirror</th><th>최종 변경</th>${ed('turret') ? '<th></th>' : ''}</tr>${turretRows}</table>
+
+    <h3>SNSPD ${editBtn('snspd')}</h3>
+    <table class="list"><tr><th>채널</th><th>연결 채널 파장범위</th><th>연결 상태</th><th>최종 변경</th></tr>${snspdRows}</table>
+
+    <h3>Powermeter ${editBtn('powermeter')}</h3>
+    <table class="list"><tr><th>번호</th><th>Connected detector</th><th>Position</th><th>최종 변경</th></tr>${pmRows}</table>
+
+    <h3>기타 추가 요소 (ND / Pinhole / Filter 등) ${editBtn('extras')} ${ed('extras') ? '<button class="btn sm" data-hwadd="extras">+ 요소 추가</button>' : ''}</h3>
+    <table class="list"><tr><th>품목</th><th>위치</th><th>추가/변경</th>${ed('extras') ? '<th></th>' : ''}</tr>${exRows}</table>
+
+    <h3>최근 변경 이력</h3>
+    <div class="hwlog"><table class="list"><tr><th>일시</th><th>유저</th><th>구분</th><th>변경 내용</th></tr>${logRows}</table></div>
+  </div>`;
+}
+
+const HW_SECTION_LABEL = { laser: 'LASER', turret: 'Microscope Turret', snspd: 'SNSPD', powermeter: 'Powermeter', extras: '기타 요소' };
+/* 편집 저장: DOM 입력 수집 → diff 요약 생성 → 저장+로그 */
+async function saveHwSection(section) {
+  const cur = S.hw ? JSON.parse(JSON.stringify(S.hw)) : defaultHw();
+  ['laser', 'turret', 'snspd', 'powermeter', 'extras'].forEach(k => { if (!cur[k]) cur[k] = defaultHw()[k]; });
+  const before = JSON.parse(JSON.stringify(cur[section]));
+  // 입력값 반영
+  document.querySelectorAll(`[data-hw^="${section}."]`).forEach(inp => {
+    const [, i, f] = inp.dataset.hw.split('.');
+    if (!cur[section][i]) return;
+    cur[section][i][f] = inp.type === 'checkbox' ? inp.checked : inp.value.trim();
+  });
+  // diff 요약
+  const label = row => row.band || ('Turret ' + (row.no || '?')) || row.item;
+  const fields = {
+    laser: [['band', '파장'], ['controller', '컨트롤러'], ['turret', 'Align Turret']],
+    turret: [['no', '번호'], ['mirror', 'Mirror']],
+    snspd: [['range', '파장범위'], ['detFiber', 'Detector(Fiber)'], ['ttl', 'TTL converter'], ['ttlPower', 'TTL Power cable']],
+    powermeter: [['detector', 'Detector'], ['position', 'Position']],
+    extras: [['item', '품목'], ['location', '위치']],
+  }[section];
+  const lines = [];
+  const fmtV = v => v === true ? '연결' : v === false ? '해제' : (v || '(없음)');
+  const nameOfRow = (row) => section === 'laser' ? (row.band || '(무명)') : section === 'turret' ? ('Turret ' + (row.no || '?'))
+    : section === 'snspd' ? ('SNSPD ' + row.ch) : section === 'powermeter' ? ('Powermeter ' + row.no) : (row.item || '(무명)');
+  const maxLen = Math.max(before.length, cur[section].length);
+  for (let i = 0; i < maxLen; i++) {
+    const b = before[i], a = cur[section][i];
+    if (b && !a) { lines.push(`- ${nameOfRow(b)}: 제거됨`); continue; }
+    if (!b && a) { lines.push(`- ${nameOfRow(a)}: 신규 추가 (${fields.map(([f, l]) => `${l}=${fmtV(a[f])}`).join(', ')})`); a.updatedAt = Date.now(); a.updatedBy = S.user.id; continue; }
+    const diffs = fields.filter(([f]) => JSON.stringify(b[f]) !== JSON.stringify(a[f]));
+    if (diffs.length) {
+      lines.push(`- ${nameOfRow(a)}: ` + diffs.map(([f, l]) => `${l} ${fmtV(b[f])} → ${fmtV(a[f])}`).join(', '));
+      a.updatedAt = Date.now(); a.updatedBy = S.user.id;
+    }
+  }
+  if (!lines.length) { hwEdit.section = null; render(); toast('변경사항이 없습니다.'); return; }
+  try {
+    await store.saveHardware(cur, HW_SECTION_LABEL[section], lines.join('\n'));
+    hwEdit.section = null;
+    toast('저장되었습니다. 변경 내용이 Slack에 곧 공지됩니다.', 'okk');
+  } catch (e) { toast('저장 실패: ' + e.message, 'err'); }
+}
+
+/* ---------------- Remark (특이사항, 최근 10개만 보관) ---------------- */
+function renderRemark() {
+  const canWrite = !!(S.user && (S.user.optics || S.user.isAdmin));
+  const rows = (S.remarks || []).map(e => {
+    const mine = S.user && (e.memberId === S.user.id || S.user.isAdmin);
+    return `<tr>
+      <td class="meta" style="white-space:nowrap;width:1%">${e.tsMs ? optFmtDateDow(e.tsMs) : '-'}</td>
+      <td style="white-space:nowrap;width:1%"><b>${esc(memberName(e.memberId))}</b></td>
+      <td style="white-space:pre-wrap;word-break:break-word">${esc(e.text)}</td>
+      <td style="width:1%;white-space:nowrap">${mine ? `<button class="btn sm danger" data-remdel="${e.tsMs}|${esc(e.memberId)}">삭제</button>` : ''}</td></tr>`;
+  }).join('') || '<tr><td colspan="4" class="muted">기록된 특이사항이 없습니다.</td></tr>';
+  return `<div class="card">
+    <h2>📝 Remark — 특이사항 기록</h2>
+    <p class="muted" style="margin:6px 0 12px">측정·장비·실험실 관련 특이사항을 자유롭게 남기세요. 날짜와 이름은 자동 기록됩니다.
+      <b>최근 10개만 보관</b>되며, 새 기록이 추가되면 가장 오래된 항목부터 자동 삭제됩니다.</p>
+    ${canWrite ? `
+    <div class="flexrow" style="align-items:flex-start;margin-bottom:14px">
+      <textarea id="remarkText" maxlength="500" rows="2" placeholder="특이사항 입력 (500자 이내)"
+        style="flex:1;min-width:240px;border:1.5px solid var(--line);border-radius:9px;padding:9px 12px;font-size:14px;font-family:inherit;resize:vertical"></textarea>
+      <button class="btn primary" id="btnAddRemark">기록</button>
+    </div>` : '<div class="note">기록하려면 광학 활성 멤버로 로그인하세요.</div>'}
+    <table class="list"><tr><th style="width:1%;white-space:nowrap">날짜</th><th style="width:1%;white-space:nowrap">이름</th><th>특이사항</th><th style="width:1%"></th></tr>${rows}</table>
+  </div>`;
+}
+
+/* ---------------- 명단 / 규칙 / 관리자 ---------------- */
+function renderMembers() {
+  const ms = Object.values(S.members).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  const rows = ms.map(m => `<tr>
+    <td><b>${esc(m.name)}</b>${m.isAdmin ? ' <span class="badge b-violet">관리자</span>' : ''}</td>
+    <td>${m.opticsActive === true ? '<span class="badge b-green">광학 활성</span>' : '<span class="badge b-gray">광학 비활성</span>'}</td>
+    <td>${m.active === true ? '<span class="badge b-accent">합성 활성</span>' : '<span class="badge b-gray">합성 비활성</span>'}</td>
+    <td>${m.pinHash ? '<span class="badge b-green">등록 완료</span>' : '<span class="badge b-amber">미등록</span>'}</td></tr>`).join('');
+  return `<div class="card"><h2>명단 (광학 활성 ${ms.filter(m => m.opticsActive === true).length}명)</h2>
+    <p class="muted" style="margin-bottom:8px">명단·PIN·기기 인증은 Synthesis Scheduler와 공유되며, 광학/합성 활성 여부는 별도로 관리됩니다. 광학 활성 멤버만 순위 투표·스케줄 수정·채팅·하드웨어 기록이 가능합니다.</p>
+    <table class="list"><tr><th>이름</th><th>광학</th><th>합성</th><th>계정</th></tr>${rows}</table></div>`;
+}
+
+function renderRules() {
+  return `<div class="card rules"><h2>📖 광학방 운영 규칙</h2>
+
+  <div class="note" style="border:1.5px solid var(--red);background:var(--red-soft);color:#8a2530;font-size:14px">
+    <b>⚠ 최우선 주의사항</b> — ① 확보한 시간을 못 쓰게 되면 <b>즉시 스케줄에서 비우고</b> 채팅으로 알리세요.
+    ② 부품(레이저·미러·SNSPD·파워미터·ND/핀홀/필터 등)을 추가·제거·변경하면 <b>즉시 Hardware Log에 기록</b>하세요. 다음 측정자의 시간과 데이터를 지키는 약속입니다.
+  </div>
+
+  <h3>1. 주간 사이클 (모든 시각 KST, 서버 강제)</h3>
+  <ul>
+    <li><b>월 00:00 ~ 수 24:00</b> — 요일 순위 투표 (다음 주 대상). 기간 중 자유 수정/취소.</li>
+    <li><b>목 12:00</b> — 요일 배정 자동 발표 + Slack 공지. 이후 <b>전원 자유 조율</b> 시작.</li>
+    <li>조율(스케줄 수정)은 발표 직후부터 <b>해당 주 일요일 24시까지</b> 계속 가능.</li>
+  </ul>
+
+  <h3>2. 투표 방식</h3>
+  <ul>
+    <li>1인당 <b>1/2/3순위 요일</b>을 투표 (반드시 3개를 채울 필요 없음, 같은 요일 중복 불가).</li>
+    <li>적게 투표할수록 동순위 경쟁에서 유리함 (아래 배정 기준 ③).</li>
+  </ul>
+
+  <h3>3. 요일 배정 기준 (목 12:00, 이 순서대로 판정)</h3>
+  <ul>
+    <li>① <b>무당첨자 절대 우선</b> — 이번 주 아직 아무 요일도 배정받지 못한 사람이, 이미 배정받은 사람보다 순위와 무관하게 우선.</li>
+    <li>② 해당 요일에 대한 <b>순위가 높은</b> 사람 우선.</li>
+    <li>③ 동순위면 <b>전체 투표 수가 적은</b> 사람 우선 (더 간절함).</li>
+    <li>④ 그래도 같으면 <b>시드 기반 무작위 추첨</b> (시드 = 마감된 전체 투표의 SHA-256 → 조작·예측 불가, 전원 재검증).</li>
+    <li>요일은 월→일 순서로 처리하며, 당첨 누적은 다음 요일 판정에 즉시 반영됨. 경쟁이 없으면 한 사람이 여러 요일 배정 가능.</li>
+    <li>배정 시 해당 요일 <b>00-24시 전체</b>가 통째로 배정됨. 미배정 요일은 빈 상태로 시작.</li>
+  </ul>
+
+  <h3>4. 자유 조율 (발표 후)</h3>
+  <ul>
+    <li>광학 활성 멤버 <b>전원</b>이 스케줄을 30분 단위로 수정 가능 (클릭 또는 드래그 → 사용자 지정/비우기).</li>
+    <li>수정 전 <b>일정 조율 논의 탭에서 채팅으로 협의</b>하는 것이 원칙. 미니 스케줄에서 바로 수정하면 즉시 전체 반영.</li>
+    <li>스케줄 탭과 일정 조율 탭의 <b>희망순위 표시 토글</b>로 각자의 1/2/3순위 희망을 반투명으로 확인 가능 — 조율 시 참고.</li>
+    <li>변경은 1분 내 공용 구글캘린더에 자동 반영. <b>캘린더에서 직접 수정 금지</b> (자동 원상복구됨).</li>
+  </ul>
+
+  <h3>5. Hardware Log 의무</h3>
+  <ul>
+    <li>측정 시작 전 현황판 확인, 구성 변경 시 즉시 기록 (LASER 컨트롤러/Turret Align, Turret Mirror, SNSPD 채널·연결 3종, Powermeter, ND/핀홀/필터 등).</li>
+    <li>저장하면 변경 내용·일시(요일)·유저가 이력에 남고, Slack 채널에 1분 내 자동 공지됨.</li>
+  </ul>
+
+  <h3>6. Remark (특이사항)</h3>
+  <ul>
+    <li>측정·장비·실험실 관련 공유사항은 <b>Remark 탭</b>에 기록 (날짜·이름 자동 기록, 최근 10개만 보관 — 초과 시 오래된 것부터 자동 삭제).</li>
+  </ul>
+
+  <h3>7. 시스템·공정성 보장</h3>
+  <ul>
+    <li>마감시각·본인확인(PIN+기기)·투표 형식은 서버 보안규칙이 강제 — 브라우저 조작으로 우회 불가.</li>
+    <li>배정 결과는 생성 후 수정 불가, 모든 접속자가 재계산 검증 (결과 탭 배지).</li>
+    <li>명단·PIN은 Synthesis Scheduler와 공유. 광학 참여 여부(활성화)는 관리자가 별도 관리.</li>
+  </ul>
+  </div>`;
+}
+
+function renderAdmin() {
+  if (!S.user?.isAdmin) return `<div class="card"><p class="muted">관리자 전용 화면입니다.</p></div>`;
+  const c = cycle();
+  const ms = Object.values(S.members).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  const rows = ms.map(m => `<tr>
+    <td><b>${esc(m.name)}</b>${m.isAdmin ? ' <span class="badge b-violet">관리자</span>' : ''}</td>
+    <td class="muted">${m.opticsActive === true ? '광학 활성' : '광학 비활성'} · ${m.pinHash ? 'PIN 등록' : 'PIN 미등록'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn sm" data-adm="opt" data-id="${m.id}">${m.opticsActive === true ? '광학 비활성화' : '광학 활성화'}</button>
+      <button class="btn sm" data-adm="pin" data-id="${m.id}">PIN 초기화</button>
+      <button class="btn sm" data-adm="dev" data-id="${m.id}">기기 초기화</button>
+      <button class="btn sm" data-adm="adm" data-id="${m.id}">${m.isAdmin ? '관리자 해제' : '관리자 지정'}</button>
+    </td></tr>`).join('');
+  return `
+  <div class="card"><h2>멤버 관리 (합성과 공유되는 명단)</h2>
+    <div class="flexrow" style="margin-bottom:10px">
+      <input id="newMemberName" placeholder="새 멤버 이름" style="border:1.5px solid var(--line);border-radius:9px;padding:8px 12px;font-family:inherit">
+      <button class="btn primary" id="btnAddMember">명단에 추가 (광학 활성)</button>
+      <span class="muted">합성 활성화는 Synthesis Scheduler 관리자 탭에서.</span>
+    </div>
+    <table class="list"><tr><th>이름</th><th>상태</th><th>조치</th></tr>${rows}</table>
+    <div class="note">멤버 삭제·합성 활성 토글은 Synthesis Scheduler 관리자 탭 이용. 기존 합성 멤버는 여기서 "광학 활성화"만 눌러주면 같은 PIN으로 바로 참여 가능.</div>
+  </div>
+  <div class="card"><h2>배정 결과 관리</h2>
+    <p class="muted" style="margin-bottom:8px">검증 불일치가 표시된 경우에만 사용. 삭제 후 자동 재생성되며 결정론적이므로 동일 투표에서는 동일 결과.</p>
+    <button class="btn danger" id="btnDelResults">이번 사이클(${weekLabel(c.targetWeek)}) 결과 삭제 후 재생성</button>
+  </div>`;
+}
+
+/* ---------------- 로그인 모달 ---------------- */
+function openLogin() {
+  const list = Object.values(S.members).filter(m => m.opticsActive === true || m.isAdmin);
+  if (!list.length) {
+    showModal(`<h2>멤버 없음</h2><p class="muted">아직 광학 활성 멤버가 없습니다. Synthesis Scheduler에서 관리자로 로그인한 뒤, 이 앱의 관리자 탭에서 멤버들의 "광학 활성화"를 켜주세요. (명단·PIN 공유)</p>
+      <div class="flexrow"><button class="btn" data-close>닫기</button></div>`);
+    return;
+  }
+  const opts = list.sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+    .map(m => `<option value="${m.id}">${esc(m.name)}${m.pinHash ? '' : ' (첫 로그인)'}</option>`).join('');
+  showModal(`
+    <h2>멤버 로그인</h2>
+    <p class="muted" style="margin-bottom:10px">Synthesis Scheduler와 같은 계정(이름+PIN)입니다.</p>
+    <div class="field"><label>이름</label><select id="loginMember">${opts}</select></div>
+    <div class="field"><label>PIN</label><input id="loginPin" type="password" inputmode="numeric"></div>
+    <div class="flexrow"><button class="btn primary" id="btnDoLogin">로그인</button><button class="btn" data-close>취소</button></div>
+    <p class="muted" style="margin-top:10px">⚠ 첫 로그인 시 입력한 PIN이 그대로 등록되니 신중히 입력하세요. PIN 분실 시 관리자에게 초기화를 요청하세요.</p>`);
+  $('#btnDoLogin').addEventListener('click', async () => {
+    const id = $('#loginMember').value, pin = $('#loginPin').value.trim();
+    if (pin.length < 4) return toast('PIN은 4자리 이상이어야 합니다.', 'err');
+    try { await store.claim(id, pin); closeModal(); toast(`${memberName(id)}님, 환영합니다!`, 'okk'); }
+    catch (e) { toast(e.message, 'err'); }
+  });
+}
+function showModal(html) {
+  $('#modalRoot').innerHTML = `<div class="modal-bg" id="modalBg"><div class="modal">${html}</div></div>`;
+  $('#modalBg').addEventListener('click', e => { if (e.target.id === 'modalBg') closeModal(); });
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModal));
+}
+function closeModal() { $('#modalRoot').innerHTML = ''; }
+
+/* ---------------- 셀 편집 팝업 (클릭/드래그 공통) ---------------- */
+function openCellPop(weekIdx, day, s0, s1, x, y) {
+  document.querySelector('.cellpop')?.remove();
+  const list = Object.values(S.members).filter(m => m.opticsActive === true)
+    .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  const div = document.createElement('div');
+  div.className = 'cellpop';
+  div.innerHTML = `
+    <h4>${OPT_DAYS[day]} ${optSlotLabel(s0)} ~ ${s1 + 1 >= 48 ? '24:00' : optSlotLabel(s1 + 1)}</h4>
+    <div class="field"><label>배정 대상</label><select id="popMember">
+      ${S.user?.optics ? `<option value="${S.user.id}">${esc(S.user.name)} (본인)</option>` : ''}
+      ${list.filter(m => !S.user || m.id !== S.user.id).map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('')}
+      <option value="">(비우기)</option>
+    </select></div>
+    <div class="flexrow">
+      <button class="btn primary sm" id="popApply">적용</button>
+      <button class="btn sm" id="popClear">비우기</button>
+      <button class="btn sm" id="popClose">닫기</button>
+    </div>`;
+  document.body.appendChild(div);
+  const W = div.offsetWidth || 230, H = div.offsetHeight || 170;
+  div.style.left = Math.min(x, window.innerWidth - W - 10) + 'px';
+  div.style.top = Math.min(y, window.innerHeight - H - 10) + 'px';
+  const apply = async (mid) => {
+    const changes = {};
+    for (let s = s0; s <= s1; s++) changes[String(s)] = mid;
+    try { await store.setSlots(weekIdx, day, changes); div.remove(); }
+    catch (e) { toast('수정 실패: ' + e.message, 'err'); }
+  };
+  div.querySelector('#popApply').addEventListener('click', () => apply(div.querySelector('#popMember').value));
+  div.querySelector('#popClear').addEventListener('click', () => apply(''));
+  div.querySelector('#popClose').addEventListener('click', () => div.remove());
+}
+
+/* ---------------- 이벤트 바인딩 ---------------- */
+function bindMain() {
+  // 스케줄 주 선택 / 오버레이
+  document.querySelectorAll('[data-vw]').forEach(b => b.addEventListener('click', () => { S.viewWeek = b.dataset.vw; render(); }));
+  $('#ovToggle')?.addEventListener('change', e => { S.overlay = e.target.checked; render(); });
+  $('#ovToggleCoord')?.addEventListener('change', e => { S.overlay = e.target.checked; render(); });
+
+  // 캘린더 드래그/클릭 (Pointer Events; 터치 포함)
+  document.querySelectorAll('.cal[data-editable="1"]').forEach(cal => {
+    const weekIdx = parseInt(cal.dataset.calweek, 10);
+    cal.addEventListener('pointerdown', e => {
+      const cell = e.target.closest('.cell');
+      if (!cell) return;
+      e.preventDefault();
+      S.drag = { weekIdx, day: +cell.dataset.day, s0: +cell.dataset.slot, s1: +cell.dataset.slot };
+      updateDragSel(cal);
+    });
+    cal.addEventListener('pointermove', e => {
+      if (!S.drag) return;
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const cell = el?.closest?.('.cell');
+      if (cell && +cell.dataset.day === S.drag.day && cell.closest('.cal') === cal) {
+        S.drag.s1 = +cell.dataset.slot;
+        updateDragSel(cal);
+      }
+    });
+    cal.addEventListener('pointerup', e => {
+      if (!S.drag) return;
+      const d = S.drag; S.drag = null;
+      const s0 = Math.min(d.s0, d.s1), s1 = Math.max(d.s0, d.s1);
+      openCellPop(d.weekIdx, d.day, s0, s1, e.clientX + 6, e.clientY + 6);
+    });
+  });
+  document.addEventListener('pointerup', () => { if (S.drag) S.drag = null; }, { once: true });
+
+  // 투표
+  document.querySelectorAll('[data-votday]').forEach(card => card.addEventListener('click', () => {
+    const d = +card.dataset.votday;
+    const p = S.pendingRanks || {};
+    const cur = ['r1', 'r2', 'r3'].find(k => p[k] === d);
+    if (cur) { // 해제 + 하위 순위 당김
+      const vals = ['r1', 'r2', 'r3'].filter(k => k !== cur && p[k] !== undefined).map(k => p[k]);
+      S.pendingRanks = {};
+      vals.forEach((v, i) => S.pendingRanks['r' + (i + 1)] = v);
+    } else {
+      const slot = ['r1', 'r2', 'r3'].find(k => p[k] === undefined);
+      if (!slot) return toast('순위는 최대 3개까지입니다. 기존 순위를 해제 후 지정하세요.', 'err');
+      S.pendingRanks = { ...p, [slot]: d };
+    }
+    render();
+  }));
+  $('#btnSaveVote')?.addEventListener('click', async () => {
+    const err = optValidateVote(S.pendingRanks || {});
+    if (err) return toast(err, 'err');
+    try {
+      if (!Object.keys(S.pendingRanks || {}).length) {
+        if ((S.votes[S.user.id] && Object.keys(S.votes[S.user.id]).length)) await store.deleteVote();
+      } else await store.saveVote(S.pendingRanks);
+      toast('투표가 저장되었습니다.', 'okk');
+    } catch (e) { toast('저장 실패: ' + e.message, 'err'); }
+  });
+  $('#btnResetVote')?.addEventListener('click', () => { S.pendingRanks = { ...(S.votes[S.user.id] || {}) }; render(); });
+  $('#btnClearVote')?.addEventListener('click', async () => {
+    if (!confirm('이번 주 순위 투표를 전부 취소할까요?')) return;
+    try {
+      if (S.votes[S.user.id]) await store.deleteVote();
+      S.pendingRanks = {}; render(); toast('투표가 취소되었습니다.', 'okk');
+    } catch (e) { toast(e.message, 'err'); }
+  });
+
+  // 채팅
+  const send = async () => {
+    const inp = $('#chatText');
+    const text = (inp?.value || '').trim();
+    if (!text) return;
+    inp.value = '';
+    try { await store.sendChat(text); } catch (e) { toast('전송 실패: ' + e.message, 'err'); }
+  };
+  $('#btnChatSend')?.addEventListener('click', send);
+  $('#btnChatClear')?.addEventListener('click', async () => {
+    if (!S.user?.isAdmin) return;
+    if (!confirm('조율 채팅을 전체 삭제하고 백지로 초기화할까요?\n(모든 멤버에게 즉시 반영되며 되돌릴 수 없습니다)')) return;
+    try { await store.clearChat(); toast('채팅이 초기화되었습니다.', 'okk'); }
+    catch (e) { toast('초기화 실패: ' + e.message, 'err'); }
+  });
+  $('#chatText')?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) send(); });
+  if (S.tab === 'coord') { const el = $('#chatlog'); if (el) el.scrollTop = el.scrollHeight; }
+
+  // 결과 주차
+  $('#selWeek')?.addEventListener('change', e => { S.resultsWeek = parseInt(e.target.value, 10); render(); });
+
+  // Hardware
+  document.querySelectorAll('[data-hwedit]').forEach(b => b.addEventListener('click', () => { hwEdit.section = b.dataset.hwedit; render(); }));
+  document.querySelectorAll('[data-hwcancel]').forEach(b => b.addEventListener('click', () => { hwEdit.section = null; render(); }));
+  document.querySelectorAll('[data-hwsave]').forEach(b => b.addEventListener('click', () => saveHwSection(b.dataset.hwsave)));
+  document.querySelectorAll('[data-hwadd]').forEach(b => b.addEventListener('click', () => {
+    const sec = b.dataset.hwadd;
+    // 현재 입력값 보존을 위해 DOM에서 수집 후 행 추가
+    const cur = S.hw ? JSON.parse(JSON.stringify(S.hw)) : defaultHw();
+    ['laser', 'turret', 'snspd', 'powermeter', 'extras'].forEach(k => { if (!cur[k]) cur[k] = defaultHw()[k]; });
+    document.querySelectorAll(`[data-hw^="${sec}."]`).forEach(inp => {
+      const [, i, f] = inp.dataset.hw.split('.');
+      if (cur[sec][i]) cur[sec][i][f] = inp.type === 'checkbox' ? inp.checked : inp.value.trim();
+    });
+    cur[sec].push(sec === 'laser' ? { id: 'l' + Date.now(), band: '', controller: '', turret: '', updatedAt: 0, updatedBy: '' }
+      : sec === 'turret' ? { id: 't' + Date.now(), no: '', mirror: '', updatedAt: 0, updatedBy: '' }
+      : { id: 'e' + Date.now(), item: '', location: '', updatedAt: 0, updatedBy: '' });
+    S.hw = cur; render();
+  }));
+  document.querySelectorAll('[data-hwdel]').forEach(b => b.addEventListener('click', () => {
+    const [sec, i] = b.dataset.hwdel.split('.');
+    const cur = S.hw ? JSON.parse(JSON.stringify(S.hw)) : defaultHw();
+    document.querySelectorAll(`[data-hw^="${sec}."]`).forEach(inp => {
+      const [, j, f] = inp.dataset.hw.split('.');
+      if (cur[sec][j]) cur[sec][j][f] = inp.type === 'checkbox' ? inp.checked : inp.value.trim();
+    });
+    const removed = cur[sec].splice(+i, 1)[0];
+    S.hw = cur; render();
+    toast(`행이 제거 대기 상태입니다 — "저장"을 눌러야 확정됩니다.`);
+  }));
+
+  // Remark
+  $('#btnAddRemark')?.addEventListener('click', async () => {
+    const el = $('#remarkText');
+    const text = (el?.value || '').trim();
+    if (!text) return toast('특이사항 내용을 입력하세요.', 'err');
+    try { await store.addRemark(text); toast('기록되었습니다.', 'okk'); }
+    catch (e) { toast('기록 실패: ' + e.message, 'err'); }
+  });
+  document.querySelectorAll('[data-remdel]').forEach(b => b.addEventListener('click', async () => {
+    const [ts, mid] = b.dataset.remdel.split('|');
+    if (!confirm('이 특이사항 기록을 삭제할까요?')) return;
+    try { await store.deleteRemark(parseInt(ts, 10), mid); toast('삭제되었습니다.', 'okk'); }
+    catch (e) { toast('삭제 실패: ' + e.message, 'err'); }
+  }));
+
+  // 관리자
+  $('#btnAddMember')?.addEventListener('click', async () => {
+    const name = $('#newMemberName').value.trim();
+    if (!name) return toast('이름을 입력하세요.', 'err');
+    if (Object.values(S.members).some(m => m.name === name)) return toast('동일한 이름이 이미 있습니다.', 'err');
+    try { await store.admin.addMember(name); toast('멤버가 추가되었습니다 (광학 활성).', 'okk'); }
+    catch (e) { toast(e.message, 'err'); }
+  });
+  document.querySelectorAll('[data-adm]').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.id, act = b.dataset.adm, m = S.members[id];
+    const isSelf = id === S.user?.id;
+    const adminCount = Object.values(S.members).filter(x => x.isAdmin && (x.active === true || x.opticsActive === true)).length;
+    try {
+      if (act === 'opt') {
+        if (m.opticsActive === true && isSelf && m.active !== true) return toast('본인 계정의 유일한 활성 상태는 끌 수 없습니다. (잠금 방지)', 'err');
+        if (confirm(`${m.name}의 광학 참여를 ${m.opticsActive === true ? '비활성화' : '활성화'}할까요?`)) await store.admin.setOptics(id, m.opticsActive !== true);
+      }
+      if (act === 'pin' && confirm(`${m.name}의 PIN을 초기화할까요?`)) await store.admin.resetPin(id);
+      if (act === 'dev' && confirm(`${m.name}의 연결 기기를 모두 해제할까요?`)) await store.admin.resetDevices(id);
+      if (act === 'adm') {
+        if (m.isAdmin && adminCount <= 1) return toast('마지막 관리자의 권한은 해제할 수 없습니다.', 'err');
+        if (confirm(`${m.name}을(를) ${m.isAdmin ? '관리자에서 해제' : '관리자로 지정'}할까요?`)) await store.admin.setAdmin(id, !m.isAdmin);
+      }
+    } catch (e) { toast(e.message, 'err'); }
+  }));
+  $('#btnDelResults')?.addEventListener('click', async () => {
+    if (!confirm('이번 사이클 배정 결과를 삭제하고 재생성할까요?')) return;
+    try { await store.admin.deleteResults(cycle().targetWeek); S.verify = null; toast('삭제됨 — 잠시 후 자동 재생성됩니다.', 'okk'); }
+    catch (e) { toast(e.message, 'err'); }
+  });
+}
+function updateDragSel(cal) {
+  cal.querySelectorAll('.cell.sel').forEach(c => c.classList.remove('sel'));
+  if (!S.drag) return;
+  const a = Math.min(S.drag.s0, S.drag.s1), b = Math.max(S.drag.s0, S.drag.s1);
+  for (let s = a; s <= b; s++) cal.querySelector(`.cell[data-day="${S.drag.day}"][data-slot="${s}"]`)?.classList.add('sel');
+}
+
+/* ---------------- 카운트다운 & 시작 ---------------- */
+setInterval(() => {
+  document.querySelectorAll('.countdown[data-target]').forEach(el => {
+    const t = parseInt(el.dataset.target, 10);
+    el.textContent = fmtDur(t - now());
+    if (t - now() < -2000) render();
+  });
+}, 1000);
+
+store = IS_DEMO ? makeDemoStore() : makeFirestoreStore();
+store.start();
+render();
+
+</script>
+</body>
+</html>
